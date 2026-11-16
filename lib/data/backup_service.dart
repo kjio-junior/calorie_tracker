@@ -33,6 +33,8 @@ class BackupService {
   static bool _isBackedUp(String key) =>
       key.startsWith('profile_') ||
       key.startsWith('ui_') ||
+      key.startsWith('rem_') ||
+      key.startsWith('ai_') ||
       key == 'theme_id' ||
       key == 'font_family' ||
       key == 'text_scale';

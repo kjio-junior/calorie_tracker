@@ -8,10 +8,12 @@ import 'data/open_food_facts_service.dart';
 import 'features/home/home_screen.dart';
 import 'features/onboarding/onboarding_screen.dart';
 import 'state/activity_controller.dart';
+import 'state/ai_coach_controller.dart';
 import 'state/connectivity_controller.dart';
 import 'state/food_controller.dart';
 import 'state/history_controller.dart';
 import 'state/profile_controller.dart';
+import 'state/reminder_controller.dart';
 import 'state/ui_prefs.dart';
 
 Future<void> main() async {
@@ -26,6 +28,8 @@ Future<void> main() async {
     food: foodController,
     activity: activityController,
   );
+  final reminderController = await ReminderController.load();
+  final aiCoachController = await AiCoachController.load();
   final uiPrefs = await UiPrefs.load();
   final connectivity = await ConnectivityController.load();
 
@@ -42,6 +46,12 @@ Future<void> main() async {
         ),
         ChangeNotifierProvider<HistoryController>.value(
           value: historyController,
+        ),
+        ChangeNotifierProvider<ReminderController>.value(
+          value: reminderController,
+        ),
+        ChangeNotifierProvider<AiCoachController>.value(
+          value: aiCoachController,
         ),
         ChangeNotifierProvider<UiPrefs>.value(value: uiPrefs),
         ChangeNotifierProvider<ConnectivityController>.value(

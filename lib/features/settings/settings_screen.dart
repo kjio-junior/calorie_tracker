@@ -7,7 +7,9 @@ import '../../core/widgets/glass_card.dart';
 import '../../core/widgets/select_tile.dart';
 import '../../domain/user_profile.dart';
 import '../../state/profile_controller.dart';
+import 'ai_card.dart';
 import 'backup_card.dart';
+import 'reminders_card.dart';
 import 'display_card.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -32,6 +34,10 @@ class SettingsScreen extends StatelessWidget {
             const _GoalsCard(),
             const SizedBox(height: 16),
             const DisplayCard(),
+            const SizedBox(height: 16),
+            const RemindersCard(),
+            const SizedBox(height: 16),
+            const AiCard(),
             const SizedBox(height: 16),
             const BackupCard(),
             const SizedBox(height: 16),

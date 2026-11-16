@@ -19,6 +19,7 @@ import '../../state/activity_controller.dart';
 import '../food/add_food_screen.dart';
 import '../history/history_screen.dart';
 import 'activity_cards.dart';
+import 'ai_coach_card.dart';
 import '../settings/settings_screen.dart';
 import '../weight/log_weight_sheet.dart';
 
@@ -215,6 +216,9 @@ class HomeScreen extends StatelessWidget {
                 ),
               ),
             ],
+
+            const SizedBox(height: 16),
+            const AiCoachCard(),
 
             // Meals
             for (final meal in Meal.values) ...[
