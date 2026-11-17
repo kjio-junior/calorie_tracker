@@ -26,6 +26,7 @@ class BackupService {
     'workout_sessions',
     'workout_logs',
     'ai_summaries',
+    'cheat_days',
   ];
 
   static const _formatVersion = 1;

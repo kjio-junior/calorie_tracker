@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../core/utils/formatters.dart';
+import '../data/cheat_repository.dart';
 import '../data/food_repository.dart';
 import '../data/weight_repository.dart';
 import '../domain/food.dart';
@@ -8,17 +9,22 @@ import '../domain/streaks.dart';
 
 /// Today's food log, totals and streaks, plus the saved-foods cache.
 class FoodController extends ChangeNotifier {
-  FoodController._(this._repo, this._weightRepo);
+  FoodController._(this._repo, this._weightRepo, this._cheatRepo);
 
   final FoodRepository _repo;
   final WeightRepository _weightRepo;
+  final CheatRepository _cheatRepo;
 
   String _todayKey = Fmt.dateKey(DateTime.now());
   List<FoodLogEntry> _logs = [];
   StreakStats _streaks = StreakStats.empty;
 
   static Future<FoodController> load() async {
-    final c = FoodController._(FoodRepository(), WeightRepository());
+    final c = FoodController._(
+      FoodRepository(),
+      WeightRepository(),
+      CheatRepository(),
+    );
     await c.refreshToday();
     return c;
   }
@@ -45,10 +51,12 @@ class FoodController extends ChangeNotifier {
   Future<void> _refreshStreaks() async {
     final days = await _repo.dayTotals();
     final targets = await _weightRepo.allTargets();
+    final cheatDays = await _cheatRepo.allDays();
     _streaks = StreakService.compute(
       days: days,
       targets: targets,
       today: DateTime.now(),
+      cheatDays: cheatDays,
     );
   }
 
@@ -59,6 +67,7 @@ class FoodController extends ChangeNotifier {
     required Portion portion,
     required Meal meal,
     bool saveToFoods = true,
+    DateTime? date,
   }) async {
     int? savedId;
     if (saveToFoods) {
@@ -67,7 +76,7 @@ class FoodController extends ChangeNotifier {
     }
     await _repo.insertLog(
       FoodLogEntry(
-        date: Fmt.dateKey(DateTime.now()),
+        date: Fmt.dateKey(date ?? DateTime.now()),
         meal: meal,
         name: food.name,
         servingDesc: portion.label,

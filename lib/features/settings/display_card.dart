@@ -46,6 +46,15 @@ class DisplayCard extends StatelessWidget {
           ),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
+            title: const Text('No calorie limit on cheat days'),
+            subtitle: const Text(
+              'Off = a cheat day uses your maintenance calories as the limit.',
+            ),
+            value: ui.cheatUnlimited,
+            onChanged: ui.setCheatUnlimited,
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
             title: const Text('Show streaks'),
             subtitle: const Text('Logging, calorie and protein streaks'),
             value: ui.showStreaks,

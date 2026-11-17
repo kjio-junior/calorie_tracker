@@ -9,21 +9,25 @@ class UiPrefs extends ChangeNotifier {
     required bool cardioEnabled,
     required bool workoutsEnabled,
     required bool burnedAddsBack,
+    required bool cheatUnlimited,
   })  : _showStreaks = showStreaks,
         _cardioEnabled = cardioEnabled,
         _workoutsEnabled = workoutsEnabled,
-        _burnedAddsBack = burnedAddsBack;
+        _burnedAddsBack = burnedAddsBack,
+        _cheatUnlimited = cheatUnlimited;
 
   static const _kStreaks = 'ui_show_streaks';
   static const _kCardio = 'ui_cardio_enabled';
   static const _kWorkouts = 'ui_workouts_enabled';
   static const _kAddBack = 'ui_burned_adds_back';
+  static const _kCheatUnlimited = 'ui_cheat_unlimited';
 
   final SharedPreferences _prefs;
   bool _showStreaks;
   bool _cardioEnabled;
   bool _workoutsEnabled;
   bool _burnedAddsBack;
+  bool _cheatUnlimited;
 
   static Future<UiPrefs> load() async {
     final p = await SharedPreferences.getInstance();
@@ -35,6 +39,8 @@ class UiPrefs extends ChangeNotifier {
       // Off by default: burned calories are logged but do not raise your
       // food allowance, which keeps the deficit stricter.
       burnedAddsBack: p.getBool(_kAddBack) ?? false,
+      // Off by default: a cheat day uses your maintenance calories as limit.
+      cheatUnlimited: p.getBool(_kCheatUnlimited) ?? false,
     );
   }
 
@@ -42,6 +48,9 @@ class UiPrefs extends ChangeNotifier {
   bool get cardioEnabled => _cardioEnabled;
   bool get workoutsEnabled => _workoutsEnabled;
   bool get burnedAddsBack => _burnedAddsBack;
+
+  /// true = no calorie limit on cheat days, false = maintenance (TDEE).
+  bool get cheatUnlimited => _cheatUnlimited;
 
   void setShowStreaks(bool v) {
     if (v == _showStreaks) return;
@@ -69,5 +78,12 @@ class UiPrefs extends ChangeNotifier {
     _burnedAddsBack = v;
     notifyListeners();
     _prefs.setBool(_kAddBack, v);
+  }
+
+  void setCheatUnlimited(bool v) {
+    if (v == _cheatUnlimited) return;
+    _cheatUnlimited = v;
+    notifyListeners();
+    _prefs.setBool(_kCheatUnlimited, v);
   }
 }

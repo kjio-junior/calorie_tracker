@@ -2,7 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-/// Animated circular progress ring with a rounded sweep-gradient arc.
+/// Animated circular progress ring. Drawn with solid colours: a faint track
+/// and an opaque arc with rounded ends, with no gradient or shadow.
 class ProgressRing extends StatelessWidget {
   const ProgressRing({
     super.key,
@@ -25,7 +26,7 @@ class ProgressRing extends StatelessWidget {
     final target = progress.clamp(0.0, 1.0).toDouble();
     return TweenAnimationBuilder<double>(
       tween: Tween<double>(begin: 0, end: target),
-      duration: const Duration(milliseconds: 900),
+      duration: const Duration(milliseconds: 800),
       curve: Curves.easeOutCubic,
       builder: (context, value, _) {
         return SizedBox(
@@ -60,29 +61,30 @@ class _RingPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = size.center(Offset.zero);
     final radius = (size.shortestSide - strokeWidth) / 2;
-    final circle = Rect.fromCircle(center: center, radius: radius);
 
-    final track = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round
-      ..color = color.withValues(alpha: 0.18);
-    canvas.drawCircle(center, radius, track);
+    canvas.drawCircle(
+      center,
+      radius,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = strokeWidth
+        ..color = color.withValues(alpha: 0.16),
+    );
 
     if (progress <= 0) return;
 
-    final arc = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round
-      ..shader = SweepGradient(
-        startAngle: 0,
-        endAngle: 2 * math.pi,
-        colors: [color.withValues(alpha: 0.55), color],
-        transform: const GradientRotation(-math.pi / 2),
-      ).createShader(Offset.zero & size);
-
-    canvas.drawArc(circle, -math.pi / 2, 2 * math.pi * progress, false, arc);
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -math.pi / 2,
+      2 * math.pi * progress,
+      false,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = strokeWidth
+        ..strokeCap = StrokeCap.round
+        ..isAntiAlias = true
+        ..color = color,
+    );
   }
 
   @override

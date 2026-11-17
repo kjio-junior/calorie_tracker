@@ -7,21 +7,30 @@ import '../../state/food_controller.dart';
 
 /// Pick an amount (servings or grams) of a food and add it to a meal.
 class PortionSheet extends StatefulWidget {
-  const PortionSheet({super.key, required this.food, required this.meal});
+  const PortionSheet({
+    super.key,
+    required this.food,
+    required this.meal,
+    this.date,
+  });
 
   final Food food;
   final Meal meal;
+
+  /// The day to log on. Defaults to today.
+  final DateTime? date;
 
   static Future<void> show(
     BuildContext context, {
     required Food food,
     required Meal meal,
+    DateTime? date,
   }) {
     return showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => PortionSheet(food: food, meal: meal),
+      builder: (_) => PortionSheet(food: food, meal: meal, date: date),
     );
   }
 
@@ -77,6 +86,7 @@ class _PortionSheetState extends State<PortionSheet> {
       food: _food,
       portion: portion,
       meal: widget.meal,
+      date: widget.date,
     );
     navigator.pop();
     messenger.showSnackBar(

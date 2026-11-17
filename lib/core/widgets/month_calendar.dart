@@ -12,6 +12,7 @@ class MonthCalendar extends StatelessWidget {
     required this.month,
     required this.selected,
     required this.marked,
+    this.cheatDates = const {},
     required this.onSelect,
     required this.onMonthChanged,
   });
@@ -19,6 +20,7 @@ class MonthCalendar extends StatelessWidget {
   final DateTime month;
   final DateTime selected;
   final Set<String> marked;
+  final Set<String> cheatDates;
   final ValueChanged<DateTime> onSelect;
   final ValueChanged<DateTime> onMonthChanged;
 
@@ -57,6 +59,7 @@ class MonthCalendar extends StatelessWidget {
           d.day == selected.day;
       final isToday = d == today;
       final hasData = marked.contains(Fmt.dateKey(d));
+      final isCheat = cheatDates.contains(Fmt.dateKey(d));
 
       return Padding(
         padding: const EdgeInsets.all(2),
@@ -92,8 +95,10 @@ class MonthCalendar extends StatelessWidget {
                   height: 5,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: hasData
-                        ? (isSelected ? onAccent : t.accent)
+                    color: (hasData || isCheat)
+                        ? (isSelected
+                            ? onAccent
+                            : (isCheat ? const Color(0xFFFFB020) : t.accent))
                         : Colors.transparent,
                   ),
                 ),

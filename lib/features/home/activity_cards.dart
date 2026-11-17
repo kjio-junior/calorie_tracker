@@ -48,12 +48,12 @@ class CardioCard extends StatelessWidget {
                 '${activity.cardioBurned.round()} kcal',
                 style: text.bodySmall?.copyWith(color: muted),
               ),
-              IconButton(
-                tooltip: 'Log activity',
-                icon: Icon(Icons.add_circle_rounded, color: t.accent),
+              TextButton.icon(
                 onPressed: () => Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const LogCardioScreen()),
                 ),
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: const Text('Log'),
               ),
             ],
           ),
@@ -155,12 +155,12 @@ class WorkoutCard extends StatelessWidget {
                 '${activity.workoutBurned.round()} kcal',
                 style: text.bodySmall?.copyWith(color: muted),
               ),
-              IconButton(
-                tooltip: 'Log workout',
-                icon: Icon(Icons.add_circle_rounded, color: t.accent),
+              TextButton.icon(
                 onPressed: () => Navigator.of(context).push(
                   MaterialPageRoute(builder: (_) => const LogWorkoutScreen()),
                 ),
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: const Text('Log'),
               ),
             ],
           ),

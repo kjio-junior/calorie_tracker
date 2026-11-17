@@ -1,3 +1,5 @@
+import 'dart:ui' show Color;
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
@@ -17,13 +19,16 @@ class NotificationService {
 
   bool get ready => _ready;
 
-  static const _details = NotificationDetails(
+  static final _details = NotificationDetails(
     android: AndroidNotificationDetails(
       'reminders',
       'Reminders',
       channelDescription: 'Meal and weigh-in reminders',
       importance: Importance.high,
       priority: Priority.high,
+      icon: 'ic_stat_notify',
+      color: const Color(0xFF5865F2),
+      largeIcon: const DrawableResourceAndroidBitmap('ic_notification_large'),
     ),
   );
 

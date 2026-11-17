@@ -12,7 +12,8 @@ import '../../state/connectivity_controller.dart';
 import '../../state/food_controller.dart';
 import '../../state/profile_controller.dart';
 import '../../state/ui_prefs.dart';
-import '../settings/settings_screen.dart';
+import '../../state/cheat_controller.dart';
+import '../../state/nav_controller.dart';
 
 CoachSnapshot _buildSnapshot(BuildContext context) {
   final pc = context.read<ProfileController>();
@@ -59,6 +60,7 @@ CoachSnapshot _buildSnapshot(BuildContext context) {
     workoutSessions: activity.sessions.length,
     workoutSets: activity.sessions.fold<int>(0, (s, e) => s + e.totalSets),
     loggingStreak: food.streaks.logging,
+    isCheatDay: context.read<CheatController>().todayIsCheat,
   );
 }
 
@@ -133,9 +135,7 @@ class AiCoachCard extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
-                onPressed: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const SettingsScreen()),
-                ),
+                onPressed: () => context.read<NavController>().go(2),
                 icon: const Icon(Icons.key_rounded),
                 label: const Text('Add your free API key'),
               ),

@@ -4,27 +4,56 @@ import 'package:provider/provider.dart';
 import '../../domain/activity.dart';
 import '../theme/theme_controller.dart';
 
-/// Body silhouette with the trained muscle group highlighted (custom vector).
-class MuscleGroupIcon extends StatelessWidget {
-  const MuscleGroupIcon({super.key, required this.group, this.size = 32});
+/// Rounded tinted square that gives every icon the same look and size.
+class _IconBadge extends StatelessWidget {
+  const _IconBadge({required this.size, required this.child});
 
-  final MuscleGroup group;
   final double size;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
     final t = context.watch<ThemeController>().theme;
-    return SizedBox(
+    return Container(
       width: size,
       height: size,
-      child: CustomPaint(
-        painter: _MusclePainter(
-          group,
-          t.accent,
-          t.textColor.withValues(alpha: 0.5),
-        ),
+      padding: EdgeInsets.all(size * 0.17),
+      decoration: BoxDecoration(
+        color: t.accent.withValues(alpha: 0.14),
+        borderRadius: BorderRadius.circular(size * 0.3),
+        border: Border.all(color: t.accent.withValues(alpha: 0.35)),
+      ),
+      child: child,
+    );
+  }
+}
+
+/// Body silhouette with the trained muscle group highlighted (custom vector).
+/// With [badge] it sits in the same tinted square as [EquipmentIcon].
+class MuscleGroupIcon extends StatelessWidget {
+  const MuscleGroupIcon({
+    super.key,
+    required this.group,
+    this.size = 32,
+    this.badge = false,
+  });
+
+  final MuscleGroup group;
+  final double size;
+  final bool badge;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.watch<ThemeController>().theme;
+    final paint = CustomPaint(
+      painter: _MusclePainter(
+        group,
+        t.accent,
+        t.textColor.withValues(alpha: 0.5),
       ),
     );
+    if (!badge) return SizedBox(width: size, height: size, child: paint);
+    return _IconBadge(size: size, child: paint);
   }
 }
 
@@ -114,9 +143,10 @@ class _MusclePainter extends CustomPainter {
       old.outlineColor != outlineColor;
 }
 
-/// Simple vector icons for each type of equipment.
+/// Equipment icons: one stroke width, one colour, one size, one badge, so
+/// the whole set looks like a matching family.
 class EquipmentIcon extends StatelessWidget {
-  const EquipmentIcon({super.key, required this.equipment, this.size = 28});
+  const EquipmentIcon({super.key, required this.equipment, this.size = 40});
 
   final Equipment equipment;
   final double size;
@@ -124,26 +154,18 @@ class EquipmentIcon extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = context.watch<ThemeController>().theme;
-    return SizedBox(
-      width: size,
-      height: size,
-      child: CustomPaint(
-        painter: _EquipmentPainter(
-          equipment,
-          t.textColor.withValues(alpha: 0.85),
-          t.accent,
-        ),
-      ),
+    return _IconBadge(
+      size: size,
+      child: CustomPaint(painter: _EquipmentPainter(equipment, t.accent)),
     );
   }
 }
 
 class _EquipmentPainter extends CustomPainter {
-  _EquipmentPainter(this.equipment, this.ink, this.accent);
+  _EquipmentPainter(this.equipment, this.color);
 
   final Equipment equipment;
-  final Color ink;
-  final Color accent;
+  final Color color;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -151,16 +173,10 @@ class _EquipmentPainter extends CustomPainter {
 
     final line = Paint()
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 5
+      ..strokeWidth = 7
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round
-      ..color = ink;
-    final fill = Paint()
-      ..style = PaintingStyle.fill
-      ..color = accent;
-    final inkFill = Paint()
-      ..style = PaintingStyle.fill
-      ..color = ink;
+      ..color = color;
 
     RRect box(double x, double y, double w, double h, double r) =>
         RRect.fromRectAndRadius(Rect.fromLTWH(x, y, w, h), Radius.circular(r));
@@ -168,43 +184,41 @@ class _EquipmentPainter extends CustomPainter {
     switch (equipment) {
       case Equipment.barbell:
         canvas.drawLine(const Offset(6, 50), const Offset(94, 50), line);
-        canvas.drawRRect(box(20, 24, 9, 52, 3), fill);
-        canvas.drawRRect(box(71, 24, 9, 52, 3), fill);
-        canvas.drawRRect(box(10, 34, 7, 32, 3), fill);
-        canvas.drawRRect(box(83, 34, 7, 32, 3), fill);
+        canvas.drawRRect(box(22, 24, 11, 52, 4), line);
+        canvas.drawRRect(box(67, 24, 11, 52, 4), line);
       case Equipment.dumbbell:
         canvas.drawLine(const Offset(28, 50), const Offset(72, 50), line);
-        canvas.drawRRect(box(10, 28, 18, 44, 5), fill);
-        canvas.drawRRect(box(72, 28, 18, 44, 5), fill);
+        canvas.drawRRect(box(8, 30, 20, 40, 7), line);
+        canvas.drawRRect(box(72, 30, 20, 40, 7), line);
       case Equipment.machine:
-        for (var i = 0; i < 4; i++) {
-          canvas.drawRRect(box(14, 18 + i * 16.0, 36, 11, 3), fill);
-        }
-        canvas.drawLine(const Offset(32, 8), const Offset(32, 90), line);
-        canvas.drawRRect(box(58, 58, 30, 9, 3), inkFill);
-        canvas.drawLine(const Offset(86, 58), const Offset(86, 30), line);
+        canvas.drawRRect(box(8, 14, 36, 14, 4), line);
+        canvas.drawRRect(box(8, 43, 36, 14, 4), line);
+        canvas.drawRRect(box(8, 72, 36, 14, 4), line);
+        canvas.drawLine(const Offset(26, 6), const Offset(26, 94), line);
+        canvas.drawLine(const Offset(58, 72), const Offset(92, 72), line);
+        canvas.drawLine(const Offset(92, 72), const Offset(92, 30), line);
       case Equipment.cable:
-        canvas.drawLine(const Offset(50, 6), const Offset(50, 16), line);
-        canvas.drawCircle(const Offset(50, 28), 12, line);
-        canvas.drawLine(const Offset(38, 28), const Offset(38, 70), line);
-        canvas.drawRRect(box(24, 70, 28, 10, 4), fill);
+        canvas.drawLine(const Offset(50, 6), const Offset(50, 14), line);
+        canvas.drawCircle(const Offset(50, 28), 14, line);
+        canvas.drawLine(const Offset(36, 28), const Offset(36, 68), line);
+        canvas.drawRRect(box(22, 68, 28, 16, 6), line);
       case Equipment.bodyweight:
-        canvas.drawCircle(const Offset(50, 18), 9, line);
-        canvas.drawLine(const Offset(50, 28), const Offset(50, 62), line);
-        canvas.drawLine(const Offset(50, 36), const Offset(28, 50), line);
-        canvas.drawLine(const Offset(50, 36), const Offset(72, 50), line);
-        canvas.drawLine(const Offset(50, 62), const Offset(36, 90), line);
-        canvas.drawLine(const Offset(50, 62), const Offset(64, 90), line);
+        canvas.drawCircle(const Offset(50, 20), 10, line);
+        canvas.drawLine(const Offset(50, 31), const Offset(50, 62), line);
+        canvas.drawLine(const Offset(50, 40), const Offset(26, 56), line);
+        canvas.drawLine(const Offset(50, 40), const Offset(74, 56), line);
+        canvas.drawLine(const Offset(50, 62), const Offset(34, 92), line);
+        canvas.drawLine(const Offset(50, 62), const Offset(66, 92), line);
       case Equipment.kettlebell:
-        canvas.drawCircle(const Offset(50, 62), 26, fill);
+        canvas.drawCircle(const Offset(50, 64), 26, line);
         final handle = Path()
-          ..moveTo(34, 46)
-          ..cubicTo(30, 8, 70, 8, 66, 46);
+          ..moveTo(36, 42)
+          ..cubicTo(28, 6, 72, 6, 64, 42);
         canvas.drawPath(handle, line);
     }
   }
 
   @override
   bool shouldRepaint(_EquipmentPainter old) =>
-      old.equipment != equipment || old.ink != ink || old.accent != accent;
+      old.equipment != equipment || old.color != color;
 }

@@ -20,9 +20,12 @@ InputDecoration _dec(String label, {String? suffix, String? hint}) =>
     );
 
 class AddFoodScreen extends StatefulWidget {
-  const AddFoodScreen({super.key, required this.initialMeal});
+  const AddFoodScreen({super.key, required this.initialMeal, this.date});
 
   final Meal initialMeal;
+
+  /// Back-fill a past day. Defaults to today.
+  final DateTime? date;
 
   @override
   State<AddFoodScreen> createState() => _AddFoodScreenState();
@@ -31,10 +34,14 @@ class AddFoodScreen extends StatefulWidget {
 class _AddFoodScreenState extends State<AddFoodScreen> {
   late Meal _meal = widget.initialMeal;
 
+  bool get _isToday =>
+      widget.date == null ||
+      Fmt.dateKey(widget.date!) == Fmt.dateKey(DateTime.now());
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Add food'),
@@ -42,6 +49,7 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
             tabs: [
               Tab(text: 'Search'),
               Tab(text: 'Saved'),
+              Tab(text: 'Order'),
               Tab(text: 'Manual'),
             ],
           ),
@@ -50,6 +58,24 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
           top: false,
           child: Column(
             children: [
+              if (!_isToday)
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.fromLTRB(16, 10, 16, 0),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0x33FFB020),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0x80FFB020)),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.history_rounded, size: 18),
+                      const SizedBox(width: 8),
+                      Text('Adding to ${Fmt.shortDate(widget.date!)}'),
+                    ],
+                  ),
+                ),
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
@@ -70,9 +96,10 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
               Expanded(
                 child: TabBarView(
                   children: [
-                    _SearchTab(meal: _meal),
-                    _SavedTab(meal: _meal),
-                    _ManualTab(meal: _meal),
+                    _SearchTab(meal: _meal, date: widget.date),
+                    _SavedTab(meal: _meal, date: widget.date),
+                    _OrderTab(meal: _meal, date: widget.date),
+                    _ManualTab(meal: _meal, date: widget.date),
                   ],
                 ),
               ),
@@ -161,9 +188,10 @@ class _FoodTile extends StatelessWidget {
 // ---------------------------------------------------------------- Search
 
 class _SearchTab extends StatefulWidget {
-  const _SearchTab({required this.meal});
+  const _SearchTab({required this.meal, this.date});
 
   final Meal meal;
+  final DateTime? date;
 
   @override
   State<_SearchTab> createState() => _SearchTabState();
@@ -289,6 +317,7 @@ class _SearchTabState extends State<_SearchTab>
                           context,
                           food: f,
                           meal: widget.meal,
+                          date: widget.date,
                         ),
                       );
                     },
@@ -303,9 +332,10 @@ class _SearchTabState extends State<_SearchTab>
 // ----------------------------------------------------------------- Saved
 
 class _SavedTab extends StatefulWidget {
-  const _SavedTab({required this.meal});
+  const _SavedTab({required this.meal, this.date});
 
   final Meal meal;
+  final DateTime? date;
 
   @override
   State<_SavedTab> createState() => _SavedTabState();
@@ -399,6 +429,7 @@ class _SavedTabState extends State<_SavedTab> {
                               context,
                               food: f,
                               meal: widget.meal,
+                              date: widget.date,
                             );
                             if (mounted) _load();
                           },
@@ -416,9 +447,10 @@ class _SavedTabState extends State<_SavedTab> {
 // ---------------------------------------------------------------- Manual
 
 class _ManualTab extends StatefulWidget {
-  const _ManualTab({required this.meal});
+  const _ManualTab({required this.meal, this.date});
 
   final Meal meal;
+  final DateTime? date;
 
   @override
   State<_ManualTab> createState() => _ManualTabState();
@@ -475,6 +507,7 @@ class _ManualTabState extends State<_ManualTab> {
           portion: portion,
           meal: widget.meal,
           saveToFoods: _save,
+          date: widget.date,
         );
     if (!mounted) return;
     messenger.showSnackBar(
@@ -581,6 +614,323 @@ class _ManualTabState extends State<_ManualTab> {
               minimumSize: const Size.fromHeight(52),
             ),
             child: Text('Add to ${widget.meal.label}'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ----------------------------------------------------------------- Order
+
+class _OrderItemDraft {
+  _OrderItemDraft()
+      : name = TextEditingController(),
+        kcal = TextEditingController(),
+        protein = TextEditingController(),
+        qty = TextEditingController(text: '1');
+
+  final TextEditingController name;
+  final TextEditingController kcal;
+  final TextEditingController protein;
+  final TextEditingController qty;
+
+  bool get isEmpty =>
+      name.text.trim().isEmpty &&
+      kcal.text.trim().isEmpty &&
+      protein.text.trim().isEmpty;
+
+  void dispose() {
+    name.dispose();
+    kcal.dispose();
+    protein.dispose();
+    qty.dispose();
+  }
+}
+
+/// Restaurant order: type the items exactly as the menu lists them (name and
+/// calories). Each item is logged separately and can be saved for reuse.
+class _OrderTab extends StatefulWidget {
+  const _OrderTab({required this.meal, this.date});
+
+  final Meal meal;
+  final DateTime? date;
+
+  @override
+  State<_OrderTab> createState() => _OrderTabState();
+}
+
+class _OrderTabState extends State<_OrderTab> {
+  final _formKey = GlobalKey<FormState>();
+  final _restaurant = TextEditingController();
+  final _items = <_OrderItemDraft>[_OrderItemDraft()];
+  // Removed rows are disposed with the tab (their TextFields live one more frame).
+  final _trash = <_OrderItemDraft>[];
+  bool _save = true;
+  bool _busy = false;
+
+  @override
+  void dispose() {
+    _restaurant.dispose();
+    for (final i in _items) {
+      i.dispose();
+    }
+    for (final i in _trash) {
+      i.dispose();
+    }
+    super.dispose();
+  }
+
+  double? _n(TextEditingController c) =>
+      double.tryParse(c.text.trim().replaceAll(',', '.'));
+
+  double get _totalKcal => _items.fold(
+        0.0,
+        (s, i) => s + (_n(i.kcal) ?? 0) * (_n(i.qty) ?? 1),
+      );
+
+  double get _totalProtein => _items.fold(
+        0.0,
+        (s, i) => s + (_n(i.protein) ?? 0) * (_n(i.qty) ?? 1),
+      );
+
+  void _snack(String msg) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(SnackBar(content: Text(msg)));
+  }
+
+  void _removeItem(_OrderItemDraft i) {
+    setState(() {
+      if (_items.length == 1) {
+        i.name.clear();
+        i.kcal.clear();
+        i.protein.clear();
+        i.qty.text = '1';
+      } else {
+        _items.remove(i);
+        _trash.add(i);
+      }
+    });
+  }
+
+  String? _numberOrEmpty(String? v, {required double max}) {
+    if ((v ?? '').trim().isEmpty) return null;
+    final n = double.tryParse(v!.trim().replaceAll(',', '.'));
+    if (n == null) return 'Number';
+    if (n < 0 || n > max) return 'Range';
+    return null;
+  }
+
+  Future<void> _submit() async {
+    final active = _items.where((i) => !i.isEmpty).toList();
+    if (active.isEmpty) {
+      _snack('Add at least one item.');
+      return;
+    }
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _busy = true);
+    try {
+      final restaurant = _restaurant.text.trim();
+      final controller = context.read<FoodController>();
+      var total = 0.0;
+      for (final i in active) {
+        final qty = _n(i.qty) ?? 1;
+        final item = i.name.text.trim();
+        final food = Food.create(
+          name: restaurant.isEmpty ? item : '$item - $restaurant',
+          brand: restaurant.isEmpty ? null : restaurant,
+          source: 'custom',
+          servingDesc: 'as listed',
+          kcalPerServing: _n(i.kcal)!,
+          proteinPerServing: _n(i.protein) ?? 0,
+        );
+        final portion = food.byServings(qty);
+        total += portion.calories;
+        await controller.addFood(
+          food: food,
+          portion: portion,
+          meal: widget.meal,
+          saveToFoods: _save,
+          date: widget.date,
+        );
+      }
+      if (!mounted) return;
+      _snack('Order logged: ${active.length} item(s), ${total.round()} kcal.');
+      setState(() {
+        _restaurant.clear();
+        _trash.addAll(_items);
+        _items
+          ..clear()
+          ..add(_OrderItemDraft());
+      });
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.watch<ThemeController>().theme;
+    final text = Theme.of(context).textTheme;
+    final muted = t.textColor.withValues(alpha: 0.7);
+    const numeric = TextInputType.numberWithOptions(decimal: true);
+
+    return Form(
+      key: _formKey,
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+        children: [
+          GlassCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextFormField(
+                  controller: _restaurant,
+                  textCapitalization: TextCapitalization.words,
+                  decoration: _dec('Restaurant (optional)', hint: 'e.g. Jollibee'),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Enter each item and the calories printed on the menu or '
+                  'receipt.',
+                  style: text.bodySmall?.copyWith(color: muted),
+                ),
+              ],
+            ),
+          ),
+          for (var n = 0; n < _items.length; n++) ...[
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(18),
+                color: t.glassFill,
+                border: Border.all(color: t.glassBorder),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextFormField(
+                          controller: _items[n].name,
+                          textCapitalization: TextCapitalization.sentences,
+                          decoration: _dec('Item ${n + 1}', hint: 'e.g. Chickenjoy 1pc'),
+                          onChanged: (_) => setState(() {}),
+                          validator: (v) => (_items[n].isEmpty ||
+                                  (v ?? '').trim().isNotEmpty)
+                              ? null
+                              : 'Enter a name',
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Remove item',
+                        icon: const Icon(Icons.close_rounded),
+                        onPressed: () => _removeItem(_items[n]),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: TextFormField(
+                          controller: _items[n].kcal,
+                          keyboardType: numeric,
+                          decoration: _dec('Calories', suffix: 'kcal'),
+                          onChanged: (_) => setState(() {}),
+                          validator: (v) {
+                            if (_items[n].isEmpty) return null;
+                            if ((v ?? '').trim().isEmpty) return 'Required';
+                            return _numberOrEmpty(v, max: 5000);
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        flex: 2,
+                        child: TextFormField(
+                          controller: _items[n].protein,
+                          keyboardType: numeric,
+                          decoration: _dec('Protein', suffix: 'g'),
+                          onChanged: (_) => setState(() {}),
+                          validator: (v) => _numberOrEmpty(v, max: 500),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        flex: 2,
+                        child: TextFormField(
+                          controller: _items[n].qty,
+                          keyboardType: numeric,
+                          decoration: _dec('Qty'),
+                          onChanged: (_) => setState(() {}),
+                          validator: (v) {
+                            final q = double.tryParse(
+                              (v ?? '').trim().replaceAll(',', '.'),
+                            );
+                            if (q == null || q <= 0 || q > 50) return '0.1-50';
+                            return null;
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: () => setState(() => _items.add(_OrderItemDraft())),
+            icon: const Icon(Icons.add_rounded),
+            label: const Text('Add another item'),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size.fromHeight(46),
+            ),
+          ),
+          const SizedBox(height: 12),
+          GlassCard(
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Order total',
+                      style: text.titleSmall
+                          ?.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                    Text(
+                      '${_totalKcal.round()} kcal  |  '
+                      '${_totalProtein.toStringAsFixed(0)} g protein',
+                      style: text.titleSmall
+                          ?.copyWith(fontWeight: FontWeight.w800),
+                    ),
+                  ],
+                ),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Save items to my foods'),
+                  subtitle: const Text('Reorder them later, even offline'),
+                  value: _save,
+                  onChanged: (v) => setState(() => _save = v),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          FilledButton.icon(
+            onPressed: _busy ? null : _submit,
+            icon: const Icon(Icons.receipt_long_rounded),
+            label: Text('Log order to ${widget.meal.label}'),
+            style: FilledButton.styleFrom(
+              minimumSize: const Size.fromHeight(52),
+            ),
           ),
         ],
       ),

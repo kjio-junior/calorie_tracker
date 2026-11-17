@@ -312,7 +312,7 @@ class _ExerciseCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              MuscleGroupIcon(group: ex.group, size: 36),
+              MuscleGroupIcon(group: ex.group, size: 44, badge: true),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -330,7 +330,7 @@ class _ExerciseCard extends StatelessWidget {
                   ],
                 ),
               ),
-              EquipmentIcon(equipment: ex.equipment, size: 28),
+              EquipmentIcon(equipment: ex.equipment, size: 44),
               IconButton(
                 tooltip: 'Remove exercise',
                 icon: const Icon(Icons.close_rounded),

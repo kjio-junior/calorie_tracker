@@ -127,7 +127,11 @@ class _ExercisePickerState extends State<ExercisePicker> {
                                   ),
                                   child: Row(
                                     children: [
-                                      MuscleGroupIcon(group: e.group, size: 36),
+                                      MuscleGroupIcon(
+                                        group: e.group,
+                                        size: 44,
+                                        badge: true,
+                                      ),
                                       const SizedBox(width: 12),
                                       Expanded(
                                         child: Column(
@@ -152,7 +156,7 @@ class _ExercisePickerState extends State<ExercisePicker> {
                                         children: [
                                           EquipmentIcon(
                                             equipment: e.equipment,
-                                            size: 26,
+                                            size: 44,
                                           ),
                                           Text(
                                             e.equipment.label,

@@ -6,6 +6,8 @@ import 'package:provider/provider.dart';
 import '../theme/theme_controller.dart';
 
 /// Frosted-glass container: blurred backdrop, translucent fill, 1px border.
+/// [tint] adds a colour wash on top of the fill and [borderColor] replaces
+/// the border, which is handy to highlight important cards.
 class GlassCard extends StatelessWidget {
   const GlassCard({
     super.key,
@@ -14,6 +16,8 @@ class GlassCard extends StatelessWidget {
     this.radius = 24,
     this.blur = 18,
     this.onTap,
+    this.tint,
+    this.borderColor,
   });
 
   final Widget child;
@@ -21,11 +25,14 @@ class GlassCard extends StatelessWidget {
   final double radius;
   final double blur;
   final VoidCallback? onTap;
+  final Color? tint;
+  final Color? borderColor;
 
   @override
   Widget build(BuildContext context) {
     final t = context.watch<ThemeController>().theme;
     final shape = BorderRadius.circular(radius);
+    final fill = tint == null ? t.glassFill : Color.alphaBlend(tint!, t.glassFill);
 
     return ClipRRect(
       borderRadius: shape,
@@ -34,9 +41,9 @@ class GlassCard extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 300),
           decoration: BoxDecoration(
-            color: t.glassFill,
+            color: fill,
             borderRadius: shape,
-            border: Border.all(color: t.glassBorder, width: 1),
+            border: Border.all(color: borderColor ?? t.glassBorder, width: 1),
           ),
           child: Material(
             type: MaterialType.transparency,

@@ -11,7 +11,10 @@ import '../../data/weight_repository.dart';
 import '../../domain/activity.dart';
 import '../../domain/exercise_library.dart';
 import '../../domain/food.dart';
+import '../../core/utils/meal_guess.dart';
+import '../../state/cheat_controller.dart';
 import '../../state/history_controller.dart';
+import '../food/add_food_screen.dart';
 import '../../state/profile_controller.dart';
 import '../../state/ui_prefs.dart';
 import '../weight/log_weight_sheet.dart';
@@ -35,6 +38,7 @@ class HistoryScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final h = context.watch<HistoryController>();
     final ui = context.watch<UiPrefs>();
+    final cheat = context.watch<CheatController>();
     final t = context.watch<ThemeController>().theme;
     final text = Theme.of(context).textTheme;
     final detail = h.detail;
@@ -62,17 +66,30 @@ class HistoryScreen extends StatelessWidget {
                 month: h.month,
                 selected: h.selected,
                 marked: h.marked,
+                cheatDates: cheat.days,
                 onSelect: h.select,
                 onMonthChanged: h.showMonth,
               ),
             ),
             const SizedBox(height: 16),
-            Text(
-              '${_weekdays[d.weekday - 1]}, ${Fmt.shortDate(d)}, ${d.year}',
-              style: text.titleLarge?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: t.textColor,
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '${_weekdays[d.weekday - 1]}, ${Fmt.shortDate(d)}, ${d.year}',
+                    style: text.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: t.textColor,
+                    ),
+                  ),
+                ),
+                FilterChip(
+                  avatar: const Icon(Icons.celebration_rounded, size: 18),
+                  label: const Text('Cheat day'),
+                  selected: cheat.isCheat(Fmt.dateKey(d)),
+                  onSelected: (_) => cheat.toggle(d),
+                ),
+              ],
             ),
             const SizedBox(height: 12),
             if (detail == null)
@@ -117,8 +134,13 @@ class _SummaryCard extends StatelessWidget {
     final burned = detail.burned.round();
     final target = detail.target?.calorieTarget;
     final proteinGoal = detail.target?.proteinTarget;
+    final isCheat = context.watch<CheatController>().isCheat(detail.date);
+    int? limit = target;
+    if (isCheat && target != null) {
+      limit = ui.cheatUnlimited ? null : detail.target!.tdee.round();
+    }
     final allowance =
-        target == null ? null : target + (ui.burnedAddsBack ? burned : 0);
+        limit == null ? null : limit + (ui.burnedAddsBack ? burned : 0);
     final remaining = allowance == null ? null : allowance - eaten;
     final over = remaining != null && remaining < 0;
     const overColor = Color(0xFFFF5C5C);
@@ -139,6 +161,29 @@ class _SummaryCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (isCheat)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.celebration_rounded,
+                    size: 18,
+                    color: Color(0xFFFFB020),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    ui.cheatUnlimited
+                        ? 'Cheat day: no calorie limit'
+                        : 'Cheat day: maintenance limit',
+                    style: text.labelLarge?.copyWith(
+                      color: const Color(0xFFFFB020),
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
           Row(
             children: [
               stat('Eaten', '$eaten kcal'),
@@ -212,9 +257,31 @@ class _FoodSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Food',
-            style: text.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  'Food',
+                  style: text.titleMedium
+                      ?.copyWith(fontWeight: FontWeight.w700),
+                ),
+              ),
+              TextButton.icon(
+                onPressed: () async {
+                  await Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => AddFoodScreen(
+                        initialMeal: guessMeal(),
+                        date: h.selected,
+                      ),
+                    ),
+                  );
+                  if (context.mounted) h.refresh();
+                },
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: const Text('Add food'),
+              ),
+            ],
           ),
           if (detail.food.isEmpty)
             Padding(

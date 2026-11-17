@@ -8,7 +8,7 @@ class AppDatabase {
   static final AppDatabase instance = AppDatabase._();
 
   static const _fileName = 'calorie_tracker.db';
-  static const _version = 3;
+  static const _version = 4;
 
   Database? _db;
 
@@ -124,6 +124,11 @@ class AppDatabase {
             created_at INTEGER NOT NULL
           )''');
         b.execute('CREATE INDEX idx_workout_sessions_date ON workout_sessions(date)');
+        b.execute('''
+          CREATE TABLE cheat_days (
+            date TEXT PRIMARY KEY,
+            created_at INTEGER NOT NULL
+          )''');
         b.execute('CREATE INDEX idx_food_logs_date ON food_logs(date)');
         b.execute('CREATE INDEX idx_cardio_logs_date ON cardio_logs(date)');
         b.execute('CREATE INDEX idx_workout_logs_date ON workout_logs(date)');
@@ -147,6 +152,13 @@ class AppDatabase {
             )''');
           await db.execute('ALTER TABLE workout_logs ADD COLUMN session_id INTEGER');
           await db.execute('CREATE INDEX idx_workout_sessions_date ON workout_sessions(date)');
+        }
+        if (oldVersion < 4) {
+          await db.execute('''
+            CREATE TABLE cheat_days (
+              date TEXT PRIMARY KEY,
+              created_at INTEGER NOT NULL
+            )''');
         }
       },
     );

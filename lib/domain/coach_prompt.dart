@@ -37,6 +37,7 @@ class CoachSnapshot {
     this.weekLoggedDays,
     this.weekAvgKcal,
     this.weekAvgProtein,
+    this.isCheatDay = false,
   });
 
   final DateTime now;
@@ -61,6 +62,7 @@ class CoachSnapshot {
   final int? weekLoggedDays;
   final int? weekAvgKcal;
   final int? weekAvgProtein;
+  final bool isCheatDay;
 
   CoachSnapshot withWeek({
     required int loggedDays,
@@ -90,6 +92,7 @@ class CoachSnapshot {
         weekLoggedDays: loggedDays,
         weekAvgKcal: avgKcal,
         weekAvgProtein: avgProtein,
+        isCheatDay: isCheatDay,
       );
 
   String toPrompt() {
@@ -145,6 +148,9 @@ class CoachSnapshot {
       );
     }
     b.writeln('Food logging streak: $loggingStreak day(s).');
+    if (isCheatDay) {
+      b.writeln('Today is a planned cheat day: do not criticise going over the target.');
+    }
     b.writeln();
     b.write('Write the daily summary now.');
     return b.toString();

@@ -36,6 +36,7 @@ class StreakService {
     required List<DayTotal> days,
     required List<DailyTargetRecord> targets,
     required DateTime today,
+    Set<String> cheatDays = const {},
   }) {
     final byDate = {for (final d in days) d.date: d};
 
@@ -68,11 +69,22 @@ class StreakService {
       return d.protein >= goal;
     }
 
-    int current(bool Function(String) ok) {
+    // With skipCheat, cheat days neither break nor extend the streak.
+    int current(bool Function(String) ok, {bool skipCheat = false}) {
+      bool neutral(String k) => skipCheat && cheatDays.contains(k);
       var d = DateTime.utc(today.year, today.month, today.day);
-      if (!ok(Fmt.dateKey(d))) d = d.subtract(const Duration(days: 1));
+      final todayKey = Fmt.dateKey(d);
+      if (!ok(todayKey) && !neutral(todayKey)) {
+        d = d.subtract(const Duration(days: 1));
+      }
       var n = 0;
-      while (ok(Fmt.dateKey(d))) {
+      while (true) {
+        final k = Fmt.dateKey(d);
+        if (neutral(k)) {
+          d = d.subtract(const Duration(days: 1));
+          continue;
+        }
+        if (!ok(k)) break;
         n++;
         d = d.subtract(const Duration(days: 1));
       }
@@ -96,8 +108,8 @@ class StreakService {
 
     return StreakStats(
       logging: current(logged),
-      calorie: current(calorieOk),
-      protein: current(proteinOk),
+      calorie: current(calorieOk, skipCheat: true),
+      protein: current(proteinOk, skipCheat: true),
       bestLogging: best,
     );
   }

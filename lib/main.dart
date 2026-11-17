@@ -5,9 +5,11 @@ import 'package:provider/provider.dart';
 import 'core/theme/theme_controller.dart';
 import 'core/widgets/gradient_background.dart';
 import 'data/open_food_facts_service.dart';
-import 'features/home/home_screen.dart';
+import 'features/shell/app_shell.dart';
 import 'features/onboarding/onboarding_screen.dart';
 import 'state/activity_controller.dart';
+import 'state/cheat_controller.dart';
+import 'state/nav_controller.dart';
 import 'state/ai_coach_controller.dart';
 import 'state/connectivity_controller.dart';
 import 'state/food_controller.dart';
@@ -30,6 +32,7 @@ Future<void> main() async {
   );
   final reminderController = await ReminderController.load();
   final aiCoachController = await AiCoachController.load();
+  final cheatController = await CheatController.load(food: foodController);
   final uiPrefs = await UiPrefs.load();
   final connectivity = await ConnectivityController.load();
 
@@ -53,6 +56,8 @@ Future<void> main() async {
         ChangeNotifierProvider<AiCoachController>.value(
           value: aiCoachController,
         ),
+        ChangeNotifierProvider<CheatController>.value(value: cheatController),
+        ChangeNotifierProvider<NavController>(create: (_) => NavController()),
         ChangeNotifierProvider<UiPrefs>.value(value: uiPrefs),
         ChangeNotifierProvider<ConnectivityController>.value(
           value: connectivity,
@@ -123,6 +128,6 @@ class _RootGateState extends State<RootGate> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     final onboarded = context.watch<ProfileController>().onboarded;
-    return onboarded ? const HomeScreen() : const OnboardingScreen();
+    return onboarded ? const AppShell() : const OnboardingScreen();
   }
 }
