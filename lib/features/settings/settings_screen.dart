@@ -11,6 +11,8 @@ import 'ai_card.dart';
 import 'backup_card.dart';
 import 'reminders_card.dart';
 import 'display_card.dart';
+import 'font_download_tile.dart';
+import 'profile_card.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
@@ -31,6 +33,8 @@ class SettingsScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
           children: [
+            const ProfileCard(),
+            const SizedBox(height: 16),
             const _GoalsCard(),
             const SizedBox(height: 16),
             const DisplayCard(),
@@ -84,6 +88,8 @@ class SettingsScreen extends StatelessWidget {
                         ),
                     ],
                   ),
+                  const SizedBox(height: 10),
+                  const FontDownloadTile(),
                   const SizedBox(height: 18),
                   Text(
                     'Text size: ${(c.textScale * 100).round()}%',
