@@ -26,6 +26,7 @@ import '../activity/cardio_screen.dart';
 import '../activity/workout_screen.dart';
 import '../food/add_food_screen.dart';
 import '../weight/log_weight_sheet.dart';
+import '../share/share_sheet.dart';
 import 'activity_cards.dart';
 import 'ai_coach_card.dart';
 
@@ -107,6 +108,13 @@ class HomeScreen extends StatelessWidget {
                     const SizedBox(width: 8),
                   ],
                   if (streak > 0) _StreakInline(days: streak),
+                  const SizedBox(width: 6),
+                  IconButton(
+                    icon: Icon(Icons.ios_share_rounded,
+                        size: 22, color: t.textSecondary),
+                    tooltip: 'Share your day',
+                    onPressed: () => ShareSheet.show(context),
+                  ),
                 ],
               ),
             ),
@@ -380,7 +388,7 @@ class _LogFoodBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
       decoration: BoxDecoration(
-        color: t.background,
+        color: t.surface,
         border: Border(top: BorderSide(color: t.divider)),
       ),
       child: AppButton(
