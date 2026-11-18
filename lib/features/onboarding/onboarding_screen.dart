@@ -371,9 +371,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.warning_amber_rounded,
-                                color: Color(0xFFFFB020),
+                                color: t.warning,
                                 size: 20,
                               ),
                               const SizedBox(width: 8),

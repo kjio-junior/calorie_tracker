@@ -1,132 +1,53 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/theme/app_themes.dart';
 import '../../core/theme/theme_controller.dart';
+import '../../core/ui/screen_title.dart';
+import '../../core/ui/section_header.dart';
 import '../../core/widgets/glass_card.dart';
 import '../../core/widgets/select_tile.dart';
 import '../../domain/user_profile.dart';
 import '../../state/profile_controller.dart';
 import 'ai_card.dart';
 import 'backup_card.dart';
-import 'reminders_card.dart';
 import 'display_card.dart';
-import 'font_download_tile.dart';
 import 'profile_card.dart';
+import 'reminders_card.dart';
+import 'theme_picker.dart';
+import 'typography_card.dart';
 
 class SettingsScreen extends StatelessWidget {
   const SettingsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final c = context.watch<ThemeController>();
-    final t = c.theme;
-    final text = Theme.of(context).textTheme;
-    final muted = t.textColor.withValues(alpha: 0.7);
-    final dark = AppThemes.all.where((e) => e.isDark).toList();
-    final light = AppThemes.all.where((e) => !e.isDark).toList();
-
+    const gap = SizedBox(height: 12);
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
       body: SafeArea(
-        top: false,
+        bottom: false,
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-          children: [
-            const ProfileCard(),
-            const SizedBox(height: 16),
-            const _GoalsCard(),
-            const SizedBox(height: 16),
-            const DisplayCard(),
-            const SizedBox(height: 16),
-            const RemindersCard(),
-            const SizedBox(height: 16),
-            const AiCard(),
-            const SizedBox(height: 16),
-            const BackupCard(),
-            const SizedBox(height: 16),
-            GlassCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Theme',
-                    style: text.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 14),
-                  Text('Dark', style: text.labelLarge?.copyWith(color: muted)),
-                  const SizedBox(height: 10),
-                  _ThemeWrap(themes: dark, selectedId: t.id),
-                  const SizedBox(height: 16),
-                  Text('Light', style: text.labelLarge?.copyWith(color: muted)),
-                  const SizedBox(height: 10),
-                  _ThemeWrap(themes: light, selectedId: t.id),
-                ],
-              ),
+          children: const [
+            ScreenTitle(
+              'Settings',
+              subtitle: 'Profile, appearance, features and data',
             ),
-            const SizedBox(height: 16),
-            GlassCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Typography',
-                    style: text.titleMedium
-                        ?.copyWith(fontWeight: FontWeight.w700),
-                  ),
-                  const SizedBox(height: 14),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      for (final f in ThemeController.fontOptions)
-                        ChoiceChip(
-                          label: Text(f),
-                          selected: c.fontFamily == f,
-                          onSelected: (_) => c.setFont(f),
-                        ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  const FontDownloadTile(),
-                  const SizedBox(height: 18),
-                  Text(
-                    'Text size: ${(c.textScale * 100).round()}%',
-                    style: text.labelLarge?.copyWith(color: muted),
-                  ),
-                  Row(
-                    children: [
-                      Text('A', style: text.bodySmall),
-                      Expanded(
-                        child: Slider(
-                          value: c.textScale,
-                          min: ThemeController.minTextScale,
-                          max: ThemeController.maxTextScale,
-                          divisions: 10,
-                          label: '${(c.textScale * 100).round()}%',
-                          onChanged: c.setTextScale,
-                        ),
-                      ),
-                      Text('A', style: text.titleLarge),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: t.glassBorder),
-                    ),
-                    child: Text(
-                      'Chicken rice bowl\n620 kcal  |  42 g protein',
-                      style: text.bodyLarge,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            SectionHeader('Account', top: 4),
+            ProfileCard(),
+            gap,
+            _GoalsCard(),
+            SectionHeader('Appearance'),
+            ThemePicker(),
+            gap,
+            TypographyCard(),
+            SectionHeader('Features'),
+            DisplayCard(),
+            gap,
+            RemindersCard(),
+            gap,
+            AiCard(),
+            SectionHeader('Data'),
+            BackupCard(),
           ],
         ),
       ),
@@ -212,93 +133,6 @@ class _GoalsCardState extends State<_GoalsCard> {
             ),
           ],
         ],
-      ),
-    );
-  }
-}
-
-class _ThemeWrap extends StatelessWidget {
-  const _ThemeWrap({required this.themes, required this.selectedId});
-
-  final List<AppThemeData> themes;
-  final String selectedId;
-
-  @override
-  Widget build(BuildContext context) {
-    final controller = context.read<ThemeController>();
-    return Wrap(
-      spacing: 14,
-      runSpacing: 14,
-      children: [
-        for (final th in themes)
-          _ThemeTile(
-            data: th,
-            selected: th.id == selectedId,
-            onTap: () => controller.setTheme(th),
-          ),
-      ],
-    );
-  }
-}
-
-class _ThemeTile extends StatelessWidget {
-  const _ThemeTile({
-    required this.data,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final AppThemeData data;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final current = context.watch<ThemeController>().theme;
-    final text = Theme.of(context).textTheme;
-
-    return SizedBox(
-      width: 72,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: onTap,
-        child: Column(
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: data.gradient,
-                ),
-                border: Border.all(
-                  color: selected
-                      ? data.accent
-                      : current.textColor.withValues(alpha: 0.25),
-                  width: selected ? 3 : 1,
-                ),
-              ),
-              child: selected
-                  ? Icon(
-                      Icons.check_rounded,
-                      color: data.isDark ? Colors.white : data.textColor,
-                    )
-                  : null,
-            ),
-            const SizedBox(height: 6),
-            Text(
-              data.name,
-              textAlign: TextAlign.center,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: text.labelSmall,
-            ),
-          ],
-        ),
       ),
     );
   }

@@ -8,7 +8,7 @@ class AppDatabase {
   static final AppDatabase instance = AppDatabase._();
 
   static const _fileName = 'calorie_tracker.db';
-  static const _version = 4;
+  static const _version = 5;
 
   Database? _db;
 
@@ -58,6 +58,10 @@ class AppDatabase {
             protein_per_100g REAL,
             kcal_per_serving REAL,
             protein_per_serving REAL,
+            carbs_per_100g REAL,
+            fat_per_100g REAL,
+            carbs_per_serving REAL,
+            fat_per_serving REAL,
             use_count INTEGER NOT NULL DEFAULT 0,
             last_used INTEGER,
             created_at INTEGER NOT NULL
@@ -73,6 +77,8 @@ class AppDatabase {
             quantity REAL NOT NULL DEFAULT 1,
             calories REAL NOT NULL,
             protein REAL NOT NULL DEFAULT 0,
+            carbs REAL NOT NULL DEFAULT 0,
+            fat REAL NOT NULL DEFAULT 0,
             saved_food_id INTEGER,
             created_at INTEGER NOT NULL
           )''');
@@ -159,6 +165,15 @@ class AppDatabase {
               date TEXT PRIMARY KEY,
               created_at INTEGER NOT NULL
             )''');
+        }
+        if (oldVersion < 5) {
+          // Carbohydrate and fat tracking.
+          await db.execute('ALTER TABLE food_logs ADD COLUMN carbs REAL NOT NULL DEFAULT 0');
+          await db.execute('ALTER TABLE food_logs ADD COLUMN fat REAL NOT NULL DEFAULT 0');
+          await db.execute('ALTER TABLE saved_foods ADD COLUMN carbs_per_100g REAL');
+          await db.execute('ALTER TABLE saved_foods ADD COLUMN fat_per_100g REAL');
+          await db.execute('ALTER TABLE saved_foods ADD COLUMN carbs_per_serving REAL');
+          await db.execute('ALTER TABLE saved_foods ADD COLUMN fat_per_serving REAL');
         }
       },
     );

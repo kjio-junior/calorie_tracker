@@ -1,20 +1,18 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../theme/theme_controller.dart';
 
-/// Frosted-glass container: blurred backdrop, translucent fill, 1px border.
-/// [tint] adds a colour wash on top of the fill and [borderColor] replaces
-/// the border, which is handy to highlight important cards.
+/// The app's standard card: solid themed surface, 1px border, small radius,
+/// and a very soft shadow on light themes. (Kept under its old name so every
+/// existing screen picks up the new look automatically.)
 class GlassCard extends StatelessWidget {
   const GlassCard({
     super.key,
     required this.child,
-    this.padding = const EdgeInsets.all(18),
-    this.radius = 24,
-    this.blur = 18,
+    this.padding = const EdgeInsets.all(16),
+    this.radius = 18,
+    this.blur = 0, // no longer used; kept for compatibility
     this.onTap,
     this.tint,
     this.borderColor,
@@ -25,6 +23,8 @@ class GlassCard extends StatelessWidget {
   final double radius;
   final double blur;
   final VoidCallback? onTap;
+
+  /// Colour wash over the surface, e.g. to highlight a state.
   final Color? tint;
   final Color? borderColor;
 
@@ -32,26 +32,30 @@ class GlassCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = context.watch<ThemeController>().theme;
     final shape = BorderRadius.circular(radius);
-    final fill = tint == null ? t.glassFill : Color.alphaBlend(tint!, t.glassFill);
+    final fill = tint == null ? t.surface : Color.alphaBlend(tint!, t.surface);
 
-    return ClipRRect(
-      borderRadius: shape,
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: blur, sigmaY: blur),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 300),
-          decoration: BoxDecoration(
-            color: fill,
-            borderRadius: shape,
-            border: Border.all(color: borderColor ?? t.glassBorder, width: 1),
-          ),
-          child: Material(
-            type: MaterialType.transparency,
-            child: InkWell(
-              onTap: onTap,
-              borderRadius: shape,
-              child: Padding(padding: padding, child: child),
-            ),
+    return Container(
+      decoration: BoxDecoration(
+        color: fill,
+        borderRadius: shape,
+        border: Border.all(color: borderColor ?? t.border),
+        boxShadow: t.isDark
+            ? null
+            : const [
+                BoxShadow(
+                  color: Color(0x0F101828),
+                  blurRadius: 14,
+                  offset: Offset(0, 4),
+                ),
+              ],
+      ),
+      child: ClipRRect(
+        borderRadius: shape,
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(padding: padding, child: child),
           ),
         ),
       ),

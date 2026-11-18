@@ -4,8 +4,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'app_themes.dart';
 
-/// Holds the user's look & feel (gradient theme, font, text scale),
-/// persists it in shared_preferences and exposes a ready-made [ThemeData].
+/// Holds the user's look and feel (theme, font, text scale), persists it in
+/// shared_preferences and builds one complete [ThemeData] from the palette so
+/// buttons, inputs, chips, sheets, dialogs and navigation all match.
 class ThemeController extends ChangeNotifier {
   static const systemFont = 'System default';
   static const fontOptions = <String>[
@@ -101,53 +102,269 @@ class ThemeController extends ChangeNotifier {
     );
   }
 
+  OutlineInputBorder _outline(Color c, [double width = 1]) => OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: c, width: width),
+      );
+
   ThemeData _buildMaterialTheme() {
     final t = _theme;
     final base = ThemeData(brightness: t.brightness, useMaterial3: true);
-    final coloredText = base.textTheme.apply(
-      bodyColor: t.textColor,
-      displayColor: t.textColor,
+    final colored = base.textTheme.apply(
+      bodyColor: t.textPrimary,
+      displayColor: t.textPrimary,
     );
     final TextTheme textTheme =
-      _font == systemFont ? coloredText : _withGoogleFont(_font, coloredText);
+        _font == systemFont ? colored : _withGoogleFont(_font, colored);
 
-    final scheme = ColorScheme.fromSeed(
-      seedColor: t.accent,
+    final scheme = ColorScheme(
       brightness: t.brightness,
-    ).copyWith(primary: t.accent, onSurface: t.textColor);
+      primary: t.accent,
+      onPrimary: t.onAccent,
+      primaryContainer: t.accentSoft,
+      onPrimaryContainer: t.textPrimary,
+      secondary: t.secondary,
+      onSecondary: t.onSecondary,
+      secondaryContainer: t.accentSoft,
+      onSecondaryContainer: t.textPrimary,
+      error: t.danger,
+      onError: Colors.white,
+      surface: t.surface,
+      onSurface: t.textPrimary,
+      onSurfaceVariant: t.textSecondary,
+      surfaceContainerLowest: t.background,
+      surfaceContainerLow: t.surface,
+      surfaceContainer: t.surface,
+      surfaceContainerHigh: t.surfaceElevated,
+      surfaceContainerHighest: t.surfaceElevated,
+      outline: t.border,
+      outlineVariant: t.divider,
+      surfaceTint: Colors.transparent,
+      shadow: Colors.black,
+      scrim: Colors.black,
+    );
+
+    final label = textTheme.labelLarge?.copyWith(
+      fontWeight: FontWeight.w700,
+      fontSize: 15,
+    );
+    final buttonShape = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(14),
+    );
+    final disabledBg = t.textSecondary.withValues(alpha: 0.14);
+    final disabledFg = t.textSecondary.withValues(alpha: 0.55);
 
     return base.copyWith(
       colorScheme: scheme,
       textTheme: textTheme,
       primaryTextTheme: textTheme,
-      // Transparent so the gradient behind the Navigator shows through.
+      // Transparent so the page gradient behind the Navigator shows through.
       scaffoldBackgroundColor: Colors.transparent,
-      iconTheme: IconThemeData(color: t.textColor),
-      dividerColor: t.textColor.withValues(alpha: 0.12),
+      canvasColor: t.surface,
+      iconTheme: IconThemeData(color: t.textPrimary),
+      dividerColor: t.divider,
+      dividerTheme: DividerThemeData(color: t.divider, space: 1, thickness: 1),
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
-        foregroundColor: t.textColor,
+        foregroundColor: t.textPrimary,
         titleTextStyle: textTheme.titleLarge?.copyWith(
-          fontWeight: FontWeight.w700,
-          color: t.textColor,
+          fontWeight: FontWeight.w800,
+          color: t.textPrimary,
         ),
+      ),
+      cardTheme: CardThemeData(
+        color: t.surface,
+        elevation: 0,
+        margin: EdgeInsets.zero,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+          side: BorderSide(color: t.border),
+        ),
+      ),
+
+      // ---- buttons ----
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: t.accent,
+          foregroundColor: t.onAccent,
+          disabledBackgroundColor: disabledBg,
+          disabledForegroundColor: disabledFg,
+          minimumSize: const Size(64, 48),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          shape: buttonShape,
+          textStyle: label,
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: t.textPrimary,
+          disabledForegroundColor: disabledFg,
+          side: BorderSide(color: t.border, width: 1.2),
+          minimumSize: const Size(64, 48),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          shape: buttonShape,
+          textStyle: label,
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: t.accent,
+          disabledForegroundColor: disabledFg,
+          minimumSize: const Size(48, 40),
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          shape: buttonShape,
+          textStyle: label?.copyWith(fontSize: 14),
+        ),
+      ),
+      iconButtonTheme: IconButtonThemeData(
+        style: IconButton.styleFrom(
+          foregroundColor: t.textPrimary,
+          disabledForegroundColor: disabledFg,
+        ),
+      ),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: t.accent,
+        foregroundColor: t.onAccent,
+        elevation: 2,
+      ),
+
+      // ---- inputs ----
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: t.inputFill,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        border: _outline(t.border),
+        enabledBorder: _outline(t.border),
+        disabledBorder: _outline(t.border.withValues(alpha: 0.5)),
+        focusedBorder: _outline(t.accent, 1.6),
+        errorBorder: _outline(t.danger),
+        focusedErrorBorder: _outline(t.danger, 1.6),
+        labelStyle: TextStyle(color: t.textSecondary),
+        floatingLabelStyle: TextStyle(color: t.accent),
+        hintStyle: TextStyle(color: t.textSecondary.withValues(alpha: 0.7)),
+        helperStyle: TextStyle(color: t.textSecondary),
+        errorStyle: TextStyle(color: t.danger),
+        prefixIconColor: t.textSecondary,
+        suffixIconColor: t.textSecondary,
+      ),
+      textSelectionTheme: TextSelectionThemeData(
+        cursorColor: t.accent,
+        selectionColor: t.accent.withValues(alpha: 0.3),
+        selectionHandleColor: t.accent,
+      ),
+
+      // ---- selection controls ----
+      chipTheme: ChipThemeData(
+        backgroundColor: t.surface,
+        selectedColor: t.accentSoft,
+        disabledColor: disabledBg,
+        side: BorderSide(color: t.border),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        labelStyle: textTheme.labelLarge?.copyWith(color: t.textPrimary),
+        checkmarkColor: t.accent,
+        showCheckmark: true,
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected) ? t.onAccent : t.textSecondary,
+        ),
+        trackColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected) ? t.accent : t.border,
+        ),
+        trackOutlineColor: const WidgetStatePropertyAll(Colors.transparent),
       ),
       sliderTheme: SliderThemeData(
         activeTrackColor: t.accent,
+        inactiveTrackColor: t.border,
         thumbColor: t.accent,
-        inactiveTrackColor: t.accent.withValues(alpha: 0.25),
         overlayColor: t.accent.withValues(alpha: 0.15),
+        valueIndicatorColor: t.accent,
+        valueIndicatorTextStyle: TextStyle(color: t.onAccent),
       ),
-      chipTheme: ChipThemeData(
-        selectedColor: t.accent.withValues(alpha: 0.35),
+      progressIndicatorTheme: ProgressIndicatorThemeData(
+        color: t.accent,
+        linearTrackColor: t.accent.withValues(alpha: 0.16),
+        circularTrackColor: t.accent.withValues(alpha: 0.16),
+      ),
+      listTileTheme: ListTileThemeData(
+        iconColor: t.textSecondary,
+        textColor: t.textPrimary,
+      ),
+      tabBarTheme: TabBarThemeData(
+        labelColor: t.accent,
+        unselectedLabelColor: t.textSecondary,
+        indicatorColor: t.accent,
+        dividerColor: t.border,
+        labelStyle: textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800),
+        unselectedLabelStyle: textTheme.labelLarge,
+      ),
+
+      // ---- overlays ----
+      dialogTheme: DialogThemeData(
+        backgroundColor: t.surfaceElevated,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(22),
+          side: BorderSide(color: t.border),
+        ),
+        titleTextStyle: textTheme.titleLarge?.copyWith(
+          fontWeight: FontWeight.w800,
+          color: t.textPrimary,
+        ),
+        contentTextStyle:
+            textTheme.bodyMedium?.copyWith(color: t.textSecondary),
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: t.surfaceElevated,
+        modalBackgroundColor: t.surfaceElevated,
+        surfaceTintColor: Colors.transparent,
+        showDragHandle: false,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: t.isDark ? t.surfaceElevated : t.textPrimary,
+        contentTextStyle: textTheme.bodyMedium?.copyWith(
+          color: t.isDark ? t.textPrimary : t.surface,
+        ),
+        actionTextColor: t.isDark ? t.accent : t.surface,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: t.isDark ? BorderSide(color: t.border) : BorderSide.none,
+        ),
+      ),
+
+      // ---- bottom navigation ----
+      navigationBarTheme: NavigationBarThemeData(
+        height: 68,
         backgroundColor: Colors.transparent,
-        side: BorderSide(color: t.textColor.withValues(alpha: 0.2)),
-        checkmarkColor: t.textColor,
-        labelStyle: textTheme.bodyMedium?.copyWith(color: t.textColor),
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        indicatorColor: t.accent.withValues(alpha: t.isDark ? 0.24 : 0.14),
+        indicatorShape: const StadiumBorder(),
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        iconTheme: WidgetStateProperty.resolveWith((s) {
+          final selected = s.contains(WidgetState.selected);
+          return IconThemeData(
+            size: 24,
+            color: selected ? t.accent : t.textSecondary,
+          );
+        }),
+        labelTextStyle: WidgetStateProperty.resolveWith((s) {
+          final selected = s.contains(WidgetState.selected);
+          return textTheme.labelMedium?.copyWith(
+            fontSize: 12,
+            fontWeight: selected ? FontWeight.w800 : FontWeight.w500,
+            color: selected ? t.accent : t.textSecondary,
+          );
+        }),
       ),
     );
   }

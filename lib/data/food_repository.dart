@@ -27,6 +27,8 @@ class FoodRepository {
             quantity: (r['quantity'] as num).toDouble(),
             calories: (r['calories'] as num).toDouble(),
             protein: (r['protein'] as num).toDouble(),
+            carbs: (r['carbs'] as num?)?.toDouble() ?? 0,
+            fat: (r['fat'] as num?)?.toDouble() ?? 0,
             savedFoodId: r['saved_food_id'] as int?,
           ),
         )
@@ -43,6 +45,8 @@ class FoodRepository {
       'quantity': e.quantity,
       'calories': e.calories,
       'protein': e.protein,
+      'carbs': e.carbs,
+      'fat': e.fat,
       'saved_food_id': e.savedFoodId,
       'created_at': DateTime.now().millisecondsSinceEpoch,
     });
@@ -59,6 +63,8 @@ class FoodRepository {
         'serving_desc': e.servingDesc,
         'calories': e.calories,
         'protein': e.protein,
+        'carbs': e.carbs,
+        'fat': e.fat,
       },
       where: 'id = ?',
       whereArgs: [e.id],
@@ -73,7 +79,8 @@ class FoodRepository {
   Future<List<DayTotal>> dayTotals() async {
     final db = await _db;
     final rows = await db.rawQuery('''
-      SELECT date, COUNT(*) AS n, SUM(calories) AS cal, SUM(protein) AS pro
+      SELECT date, COUNT(*) AS n, SUM(calories) AS cal, SUM(protein) AS pro,
+             SUM(carbs) AS carb, SUM(fat) AS fat
       FROM food_logs GROUP BY date ORDER BY date ASC''');
     return rows
         .map(
@@ -82,6 +89,8 @@ class FoodRepository {
             entries: r['n'] as int,
             calories: (r['cal'] as num?)?.toDouble() ?? 0,
             protein: (r['pro'] as num?)?.toDouble() ?? 0,
+            carbs: (r['carb'] as num?)?.toDouble() ?? 0,
+            fat: (r['fat'] as num?)?.toDouble() ?? 0,
           ),
         )
         .toList();
@@ -100,8 +109,12 @@ class FoodRepository {
       'serving_desc': f.servingDesc,
       'kcal_per_100g': f.kcalPer100g,
       'protein_per_100g': f.proteinPer100g,
+      'carbs_per_100g': f.carbsPer100g,
+      'fat_per_100g': f.fatPer100g,
       'kcal_per_serving': f.kcalPerServing,
       'protein_per_serving': f.proteinPerServing,
+      'carbs_per_serving': f.carbsPerServing,
+      'fat_per_serving': f.fatPerServing,
     };
 
     int? existingId = f.id;
@@ -174,8 +187,12 @@ class FoodRepository {
             servingDesc: r['serving_desc'] as String?,
             kcalPer100g: (r['kcal_per_100g'] as num?)?.toDouble(),
             proteinPer100g: (r['protein_per_100g'] as num?)?.toDouble(),
+            carbsPer100g: (r['carbs_per_100g'] as num?)?.toDouble(),
+            fatPer100g: (r['fat_per_100g'] as num?)?.toDouble(),
             kcalPerServing: (r['kcal_per_serving'] as num?)?.toDouble(),
             proteinPerServing: (r['protein_per_serving'] as num?)?.toDouble(),
+            carbsPerServing: (r['carbs_per_serving'] as num?)?.toDouble(),
+            fatPerServing: (r['fat_per_serving'] as num?)?.toDouble(),
           ),
         )
         .toList();

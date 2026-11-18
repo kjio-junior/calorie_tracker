@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/theme/theme_context.dart';
 import '../../core/theme/theme_controller.dart';
 import '../../core/utils/activity_icons.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/exercise_icons.dart';
 import '../../core/widgets/glass_card.dart';
-import '../../domain/activity.dart';
 import '../../state/activity_controller.dart';
 import '../../state/profile_controller.dart';
 import '../activity/cardio_screen.dart';
 import '../activity/workout_screen.dart';
 
-Widget _deleteBackground() => Container(
+Widget _deleteBackground(BuildContext context) => Container(
       alignment: Alignment.centerRight,
       padding: const EdgeInsets.only(right: 16),
-      color: Colors.red.withValues(alpha: 0.5),
-      child: const Icon(Icons.delete_rounded),
+      color: context.appTheme.danger.withValues(alpha: 0.5),
+      child: const Icon(Icons.delete_rounded, color: Colors.white),
     );
 
 class CardioCard extends StatelessWidget {
@@ -61,7 +61,7 @@ class CardioCard extends StatelessWidget {
             Dismissible(
               key: ValueKey('cardio_${e.id}'),
               direction: DismissDirection.endToStart,
-              background: _deleteBackground(),
+              background: _deleteBackground(context),
               onDismissed: (_) {
                 activity.deleteCardio(e);
                 ScaffoldMessenger.of(context)
@@ -168,7 +168,7 @@ class WorkoutCard extends StatelessWidget {
             Dismissible(
               key: ValueKey('workout_${s.id}'),
               direction: DismissDirection.endToStart,
-              background: _deleteBackground(),
+              background: _deleteBackground(context),
               onDismissed: (_) {
                 activity.deleteWorkout(s);
                 ScaffoldMessenger.of(context)

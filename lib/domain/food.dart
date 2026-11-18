@@ -12,17 +12,21 @@ enum Meal {
 
 enum PortionMode { grams, servings }
 
-/// The calories and protein for a chosen amount of a food.
+/// The nutrition for a chosen amount of a food.
 class Portion {
   const Portion({
     required this.calories,
     required this.protein,
     required this.quantity,
     required this.label,
+    this.carbs = 0,
+    this.fat = 0,
   });
 
   final double calories;
   final double protein;
+  final double carbs;
+  final double fat;
 
   /// Grams or number of servings, depending on how it was entered.
   final double quantity;
@@ -42,8 +46,12 @@ class Food {
     this.servingDesc,
     this.kcalPer100g,
     this.proteinPer100g,
+    this.carbsPer100g,
+    this.fatPer100g,
     this.kcalPerServing,
     this.proteinPerServing,
+    this.carbsPerServing,
+    this.fatPerServing,
   });
 
   final int? id;
@@ -57,8 +65,12 @@ class Food {
   final String? servingDesc;
   final double? kcalPer100g;
   final double? proteinPer100g;
+  final double? carbsPer100g;
+  final double? fatPer100g;
   final double? kcalPerServing;
   final double? proteinPerServing;
+  final double? carbsPerServing;
+  final double? fatPerServing;
 
   /// Fills in whichever of per-100g / per-serving is missing when the serving
   /// weight is known, so both entry modes work wherever possible.
@@ -71,20 +83,32 @@ class Food {
     String? servingDesc,
     double? kcalPer100g,
     double? proteinPer100g,
+    double? carbsPer100g,
+    double? fatPer100g,
     double? kcalPerServing,
     double? proteinPerServing,
+    double? carbsPerServing,
+    double? fatPerServing,
   }) {
-    var k100 = kcalPer100g;
-    var p100 = proteinPer100g;
-    var ks = kcalPerServing;
-    var ps = proteinPerServing;
+    var k100 = kcalPer100g, p100 = proteinPer100g;
+    var c100 = carbsPer100g, f100 = fatPer100g;
+    var ks = kcalPerServing, ps = proteinPerServing;
+    var cs = carbsPerServing, fs = fatPerServing;
+
     final g = servingG;
     if (g != null && g > 0) {
-      if (ks == null && k100 != null) ks = k100 * g / 100;
-      if (ps == null && p100 != null) ps = p100 * g / 100;
-      if (k100 == null && ks != null) k100 = ks * 100 / g;
-      if (p100 == null && ps != null) p100 = ps * 100 / g;
+      double? toServing(double? v) => v == null ? null : v * g / 100;
+      double? to100(double? v) => v == null ? null : v * 100 / g;
+      ks ??= toServing(k100);
+      ps ??= toServing(p100);
+      cs ??= toServing(c100);
+      fs ??= toServing(f100);
+      k100 ??= to100(ks);
+      p100 ??= to100(ps);
+      c100 ??= to100(cs);
+      f100 ??= to100(fs);
     }
+
     return Food(
       name: name,
       brand: brand,
@@ -94,8 +118,12 @@ class Food {
       servingDesc: servingDesc,
       kcalPer100g: k100,
       proteinPer100g: p100,
+      carbsPer100g: c100,
+      fatPer100g: f100,
       kcalPerServing: ks,
       proteinPerServing: ps,
+      carbsPerServing: cs,
+      fatPerServing: fs,
     );
   }
 
@@ -121,17 +149,17 @@ class Food {
       return null;
     }
 
+    double? gramsPer100(String key) {
+      final v = val(key);
+      return (v == null || v < 0 || v > 100) ? null : v;
+    }
+
     var kcal100 = val('energy-kcal_100g');
     if (kcal100 == null) {
       final kj = val('energy_100g') ?? val('energy-kj_100g');
       if (kj != null) kcal100 = kj / 4.184;
     }
     if (kcal100 == null || kcal100 < 0 || kcal100 > 900) return null;
-
-    var protein100 = val('proteins_100g');
-    if (protein100 != null && (protein100 < 0 || protein100 > 100)) {
-      protein100 = null;
-    }
 
     double? servingG;
     final sq = j['serving_quantity'];
@@ -165,7 +193,9 @@ class Food {
       servingG: servingG,
       servingDesc: servingText,
       kcalPer100g: kcal100,
-      proteinPer100g: protein100,
+      proteinPer100g: gramsPer100('proteins_100g'),
+      carbsPer100g: gramsPer100('carbohydrates_100g'),
+      fatPer100g: gramsPer100('fat_100g'),
     );
   }
 
@@ -178,6 +208,8 @@ class Food {
   Portion byGrams(double g) => Portion(
         calories: kcalPer100g! * g / 100,
         protein: (proteinPer100g ?? 0) * g / 100,
+        carbs: (carbsPer100g ?? 0) * g / 100,
+        fat: (fatPer100g ?? 0) * g / 100,
         quantity: g,
         label: '${Fmt.amount(g)} g',
       );
@@ -185,6 +217,8 @@ class Food {
   Portion byServings(double n) => Portion(
         calories: kcalPerServing! * n,
         protein: (proteinPerServing ?? 0) * n,
+        carbs: (carbsPerServing ?? 0) * n,
+        fat: (fatPerServing ?? 0) * n,
         quantity: n,
         label: n == 1 ? servingLabel : '${Fmt.amount(n)} x $servingLabel',
       );
@@ -200,6 +234,8 @@ class FoodLogEntry {
     required this.quantity,
     required this.calories,
     required this.protein,
+    this.carbs = 0,
+    this.fat = 0,
     this.savedFoodId,
   });
 
@@ -211,6 +247,8 @@ class FoodLogEntry {
   final double quantity;
   final double calories;
   final double protein;
+  final double carbs;
+  final double fat;
   final int? savedFoodId;
 }
 
@@ -220,10 +258,14 @@ class DayTotal {
     required this.entries,
     required this.calories,
     required this.protein,
+    this.carbs = 0,
+    this.fat = 0,
   });
 
   final String date;
   final int entries;
   final double calories;
   final double protein;
+  final double carbs;
+  final double fat;
 }

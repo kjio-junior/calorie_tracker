@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../theme/theme_controller.dart';
 
-/// Animated multi-stop gradient that sits behind the whole Navigator.
+/// Very subtle vertical page gradient (two close tones) behind everything.
 class GradientBackground extends StatelessWidget {
   const GradientBackground({super.key, required this.child});
 
@@ -19,17 +19,17 @@ class GradientBackground extends StatelessWidget {
       value: SystemUiOverlayStyle(
         statusBarColor: Colors.transparent,
         statusBarIconBrightness: iconBrightness,
-        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarColor: t.navBackground,
         systemNavigationBarIconBrightness: iconBrightness,
         systemNavigationBarContrastEnforced: false,
       ),
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 500),
+        duration: const Duration(milliseconds: 350),
         curve: Curves.easeInOut,
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
             colors: t.gradient,
           ),
         ),

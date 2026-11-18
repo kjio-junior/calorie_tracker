@@ -1,26 +1,32 @@
 import 'package:flutter/material.dart';
 
+import '../theme/theme_context.dart';
+
 class OfflineBadge extends StatelessWidget {
   const OfflineBadge({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final t = context.appTheme;
     final text = Theme.of(context).textTheme;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        color: const Color(0x33FFB020),
-        border: Border.all(color: const Color(0x80FFB020)),
+        color: t.warning.withValues(alpha: 0.14),
+        border: Border.all(color: t.warning.withValues(alpha: 0.5)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.wifi_off_rounded, size: 16, color: Color(0xFFFFB020)),
+          Icon(Icons.wifi_off_rounded, size: 14, color: t.warning),
           const SizedBox(width: 6),
           Text(
-            'Offline mode',
-            style: text.labelMedium?.copyWith(fontWeight: FontWeight.w700),
+            'Offline',
+            style: text.labelMedium?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: t.textPrimary,
+            ),
           ),
         ],
       ),

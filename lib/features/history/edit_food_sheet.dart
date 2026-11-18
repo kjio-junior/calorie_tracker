@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 
+import '../../core/theme/theme_context.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/glass_card.dart';
 import '../../domain/food.dart';
 
-/// Edit a logged food: name, meal, calories and protein.
+/// Edit a logged food: name, meal, calories, protein, carbs and fat.
 class EditFoodSheet extends StatefulWidget {
   const EditFoodSheet({super.key, required this.entry});
 
@@ -14,6 +15,7 @@ class EditFoodSheet extends StatefulWidget {
     return showModalBottomSheet<FoodLogEntry>(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       builder: (_) => EditFoodSheet(entry: entry),
     );
@@ -27,6 +29,8 @@ class _EditFoodSheetState extends State<EditFoodSheet> {
   late final TextEditingController _name;
   late final TextEditingController _kcal;
   late final TextEditingController _protein;
+  late final TextEditingController _carbs;
+  late final TextEditingController _fat;
   late Meal _meal;
   String? _error;
 
@@ -37,26 +41,36 @@ class _EditFoodSheetState extends State<EditFoodSheet> {
     _name = TextEditingController(text: e.name);
     _kcal = TextEditingController(text: e.calories.round().toString());
     _protein = TextEditingController(text: e.protein.toStringAsFixed(1));
+    _carbs = TextEditingController(text: e.carbs.toStringAsFixed(1));
+    _fat = TextEditingController(text: e.fat.toStringAsFixed(1));
     _meal = e.meal;
   }
 
   @override
   void dispose() {
-    _name.dispose();
-    _kcal.dispose();
-    _protein.dispose();
+    for (final c in [_name, _kcal, _protein, _carbs, _fat]) {
+      c.dispose();
+    }
     super.dispose();
   }
 
   double? _num(TextEditingController c) =>
       double.tryParse(c.text.trim().replaceAll(',', '.'));
 
+  double? _grams(TextEditingController c, double max) {
+    if (c.text.trim().isEmpty) return 0;
+    final v = _num(c);
+    return (v == null || v < 0 || v > max) ? null : v;
+  }
+
   void _scale(double factor) {
-    final k = _num(_kcal);
-    final p = _num(_protein);
     setState(() {
+      final k = _num(_kcal);
       if (k != null) _kcal.text = (k * factor).round().toString();
-      if (p != null) _protein.text = (p * factor).toStringAsFixed(1);
+      for (final c in [_protein, _carbs, _fat]) {
+        final v = _num(c);
+        if (v != null) c.text = (v * factor).toStringAsFixed(1);
+      }
     });
   }
 
@@ -64,7 +78,9 @@ class _EditFoodSheetState extends State<EditFoodSheet> {
     final e = widget.entry;
     final name = _name.text.trim();
     final kcal = _num(_kcal);
-    final protein = _protein.text.trim().isEmpty ? 0.0 : _num(_protein);
+    final protein = _grams(_protein, 1000);
+    final carbs = _grams(_carbs, 1000);
+    final fat = _grams(_fat, 1000);
     if (name.isEmpty) {
       setState(() => _error = 'Enter a name.');
       return;
@@ -73,12 +89,14 @@ class _EditFoodSheetState extends State<EditFoodSheet> {
       setState(() => _error = 'Calories must be between 0 and 10000.');
       return;
     }
-    if (protein == null || protein < 0 || protein > 1000) {
-      setState(() => _error = 'Protein must be between 0 and 1000 g.');
+    if (protein == null || carbs == null || fat == null) {
+      setState(() => _error = 'Protein, carbs and fat must be 0 to 1000 g.');
       return;
     }
-    final changed =
-        (kcal - e.calories).abs() > 0.5 || (protein - e.protein).abs() > 0.05;
+    final changed = (kcal - e.calories).abs() > 0.5 ||
+        (protein - e.protein).abs() > 0.05 ||
+        (carbs - e.carbs).abs() > 0.05 ||
+        (fat - e.fat).abs() > 0.05;
     final desc = e.servingDesc;
     final newDesc = !changed
         ? desc
@@ -96,6 +114,8 @@ class _EditFoodSheetState extends State<EditFoodSheet> {
         quantity: e.quantity,
         calories: kcal,
         protein: protein,
+        carbs: carbs,
+        fat: fat,
         savedFoodId: e.savedFoodId,
       ),
     );
@@ -103,8 +123,17 @@ class _EditFoodSheetState extends State<EditFoodSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final t = context.appTheme;
     final text = Theme.of(context).textTheme;
     const numeric = TextInputType.numberWithOptions(decimal: true);
+
+    Widget grams(TextEditingController c, String label) => Expanded(
+          child: TextField(
+            controller: c,
+            keyboardType: numeric,
+            decoration: InputDecoration(labelText: label, suffixText: 'g'),
+          ),
+        );
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
@@ -125,48 +154,36 @@ class _EditFoodSheetState extends State<EditFoodSheet> {
               ),
               if (widget.entry.servingDesc != null)
                 Text(
-                  'Logged as ${widget.entry.servingDesc}'
-                  ' on ${Fmt.shortDate(Fmt.parseKey(widget.entry.date))}',
-                  style: text.bodySmall,
+                  'Logged as ${widget.entry.servingDesc} on '
+                  '${Fmt.shortDate(Fmt.parseKey(widget.entry.date))}',
+                  style: text.bodySmall?.copyWith(color: t.textSecondary),
                 ),
               const SizedBox(height: 14),
               TextField(
                 controller: _name,
                 textCapitalization: TextCapitalization.sentences,
+                decoration: const InputDecoration(labelText: 'Food name'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _kcal,
+                keyboardType: numeric,
                 decoration: const InputDecoration(
-                  labelText: 'Food name',
-                  border: OutlineInputBorder(),
+                  labelText: 'Calories',
+                  suffixText: 'kcal',
                 ),
               ),
               const SizedBox(height: 12),
               Row(
                 children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _kcal,
-                      keyboardType: numeric,
-                      decoration: const InputDecoration(
-                        labelText: 'Calories',
-                        suffixText: 'kcal',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextField(
-                      controller: _protein,
-                      keyboardType: numeric,
-                      decoration: const InputDecoration(
-                        labelText: 'Protein',
-                        suffixText: 'g',
-                        border: OutlineInputBorder(),
-                      ),
-                    ),
-                  ),
+                  grams(_protein, 'Protein'),
+                  const SizedBox(width: 8),
+                  grams(_carbs, 'Carbs'),
+                  const SizedBox(width: 8),
+                  grams(_fat, 'Fat'),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 12),
               Wrap(
                 spacing: 8,
                 crossAxisAlignment: WrapCrossAlignment.center,
@@ -177,7 +194,7 @@ class _EditFoodSheetState extends State<EditFoodSheet> {
                   ActionChip(label: const Text('x2'), onPressed: () => _scale(2)),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 10),
               Wrap(
                 spacing: 8,
                 children: [
@@ -191,15 +208,13 @@ class _EditFoodSheetState extends State<EditFoodSheet> {
               ),
               if (_error != null)
                 Padding(
-                  padding: const EdgeInsets.only(top: 8),
+                  padding: const EdgeInsets.only(top: 10),
                   child: Text(
                     _error!,
-                    style: text.bodySmall?.copyWith(
-                      color: const Color(0xFFFF6B6B),
-                    ),
+                    style: text.bodySmall?.copyWith(color: t.danger),
                   ),
                 ),
-              const SizedBox(height: 14),
+              const SizedBox(height: 16),
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(

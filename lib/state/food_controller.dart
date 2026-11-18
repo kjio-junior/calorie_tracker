@@ -35,6 +35,8 @@ class FoodController extends ChangeNotifier {
 
   double get calories => _logs.fold(0.0, (s, e) => s + e.calories);
   double get protein => _logs.fold(0.0, (s, e) => s + e.protein);
+  double get carbs => _logs.fold(0.0, (s, e) => s + e.carbs);
+  double get fat => _logs.fold(0.0, (s, e) => s + e.fat);
 
   List<FoodLogEntry> logsFor(Meal m) =>
       _logs.where((e) => e.meal == m).toList();
@@ -83,6 +85,8 @@ class FoodController extends ChangeNotifier {
         quantity: portion.quantity,
         calories: portion.calories,
         protein: portion.protein,
+        carbs: portion.carbs,
+        fat: portion.fat,
         savedFoodId: savedId,
       ),
     );

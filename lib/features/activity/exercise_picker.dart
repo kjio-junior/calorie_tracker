@@ -32,7 +32,7 @@ class _ExercisePickerState extends State<ExercisePicker> {
     final t = context.watch<ThemeController>().theme;
     final text = Theme.of(context).textTheme;
     final muted = t.textColor.withValues(alpha: 0.7);
-    final sheetColor = Color.alphaBlend(t.glassFill, t.gradient[1]);
+    final sheetColor = t.surfaceElevated;
 
     final q = _query.trim().toLowerCase();
     final list = kExerciseLibrary.where((e) {

@@ -47,7 +47,7 @@ class RemindersCard extends StatelessWidget {
           if (!rc.available)
             Text(
               'Notifications could not start on this device.',
-              style: text.bodySmall?.copyWith(color: const Color(0xFFFF6B6B)),
+              style: text.bodySmall?.copyWith(color: t.danger),
             )
           else ...[
             for (final k in ReminderKind.values) ...[
@@ -106,7 +106,7 @@ class RemindersCard extends StatelessWidget {
                   'Notifications are turned off for this app. Enable them in '
                   'Android Settings > Apps > Calorie Tracker > Notifications.',
                   style: text.bodySmall
-                      ?.copyWith(color: const Color(0xFFFFB020)),
+                      ?.copyWith(color: t.warning),
                 ),
               ),
             const SizedBox(height: 8),

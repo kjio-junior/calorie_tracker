@@ -29,6 +29,8 @@ class DayDetail {
 
   double get calories => food.fold(0.0, (s, e) => s + e.calories);
   double get protein => food.fold(0.0, (s, e) => s + e.protein);
+  double get carbs => food.fold(0.0, (s, e) => s + e.carbs);
+  double get fat => food.fold(0.0, (s, e) => s + e.fat);
   double get cardioBurned => cardio.fold(0.0, (s, e) => s + (e.calories ?? 0));
   double get workoutBurned =>
       sessions.fold(0.0, (s, e) => s + (e.estCalories ?? 0));

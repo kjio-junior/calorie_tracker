@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../core/theme/theme_controller.dart';
+import '../../core/theme/theme_context.dart';
+import '../../core/ui/app_button.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/glass_card.dart';
 import '../../core/widgets/offline_badge.dart';
 import '../../domain/coach_prompt.dart';
 import '../../state/activity_controller.dart';
 import '../../state/ai_coach_controller.dart';
+import '../../state/cheat_controller.dart';
 import '../../state/connectivity_controller.dart';
 import '../../state/food_controller.dart';
+import '../../state/nav_controller.dart';
 import '../../state/profile_controller.dart';
 import '../../state/ui_prefs.dart';
-import '../../state/cheat_controller.dart';
-import '../../state/nav_controller.dart';
 
 CoachSnapshot _buildSnapshot(BuildContext context) {
   final pc = context.read<ProfileController>();
@@ -64,28 +65,48 @@ CoachSnapshot _buildSnapshot(BuildContext context) {
   );
 }
 
-class AiCoachCard extends StatelessWidget {
+/// Compact daily coach: a short insight and tip, with the longer explanation
+/// behind "View more". Uses the same Gemini/Groq integration as before.
+class AiCoachCard extends StatefulWidget {
   const AiCoachCard({super.key});
+
+  @override
+  State<AiCoachCard> createState() => _AiCoachCardState();
+}
+
+class _AiCoachCardState extends State<AiCoachCard> {
+  bool _expanded = false;
 
   @override
   Widget build(BuildContext context) {
     final ai = context.watch<AiCoachController>();
     final online = context.watch<ConnectivityController>().isOnline;
-    final t = context.watch<ThemeController>().theme;
+    final t = context.appTheme;
     final text = Theme.of(context).textTheme;
-    final muted = t.textColor.withValues(alpha: 0.7);
 
     final latest = ai.latest;
     final isToday =
         latest != null && latest.date == Fmt.dateKey(DateTime.now());
+    final parts = latest == null ? null : CoachParts.parse(latest.text);
 
-    String buttonLabel;
+    Widget? trailing;
     if (ai.loading) {
-      buttonLabel = 'Thinking...';
+      trailing = const Padding(
+        padding: EdgeInsets.all(10),
+        child: SizedBox(
+          width: 18,
+          height: 18,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      );
     } else if (!online) {
-      buttonLabel = 'Offline: new summary unavailable';
-    } else {
-      buttonLabel = isToday ? 'Refresh summary' : 'Generate summary';
+      trailing = const OfflineBadge();
+    } else if (ai.ready && latest != null) {
+      trailing = IconButton(
+        tooltip: 'Refresh summary',
+        icon: const Icon(Icons.refresh_rounded),
+        onPressed: () => ai.generate(_buildSnapshot(context)),
+      );
     }
 
     return GlassCard(
@@ -94,69 +115,137 @@ class AiCoachCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.auto_awesome_rounded, color: t.accent),
+              Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: t.accent.withValues(alpha: 0.14),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(Icons.auto_awesome_rounded, size: 17, color: t.accent),
+              ),
               const SizedBox(width: 10),
               Expanded(
-                child: Text(
-                  'Daily coach',
-                  style: text.titleMedium
-                      ?.copyWith(fontWeight: FontWeight.w700),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Daily coach',
+                      style: text.titleSmall
+                          ?.copyWith(fontWeight: FontWeight.w800),
+                    ),
+                    if (latest != null)
+                      Text(
+                        isToday
+                            ? 'Updated today'
+                            : 'From ${Fmt.shortDate(Fmt.parseKey(latest.date))}',
+                        style: text.labelSmall
+                            ?.copyWith(color: t.textSecondary),
+                      ),
+                  ],
                 ),
               ),
-              if (!online) const OfflineBadge(),
+              ?trailing,
             ],
           ),
           const SizedBox(height: 10),
-          if (latest != null) ...[
-            Text(latest.text, style: text.bodyMedium),
-            const SizedBox(height: 6),
+          if (parts != null) ...[
             Text(
-              isToday
-                  ? 'Updated today'
-                  : 'Saved summary from ${Fmt.shortDate(Fmt.parseKey(latest.date))}',
-              style: text.labelSmall?.copyWith(color: muted),
+              parts.insight,
+              maxLines: _expanded ? null : 3,
+              overflow: _expanded ? TextOverflow.visible : TextOverflow.ellipsis,
+              style: text.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
+            if (parts.tip != null) ...[
+              const SizedBox(height: 8),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Icon(
+                      Icons.lightbulb_outline_rounded,
+                      size: 16,
+                      color: t.accent,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      parts.tip!,
+                      maxLines: _expanded ? null : 2,
+                      overflow:
+                          _expanded ? TextOverflow.visible : TextOverflow.ellipsis,
+                      style: text.bodySmall,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            AnimatedSize(
+              duration: const Duration(milliseconds: 220),
+              curve: Curves.easeOut,
+              alignment: Alignment.topCenter,
+              child: (_expanded && parts.more != null)
+                  ? Padding(
+                      padding: const EdgeInsets.only(top: 10),
+                      child: Text(
+                        parts.more!,
+                        style: text.bodySmall
+                            ?.copyWith(color: t.textSecondary),
+                      ),
+                    )
+                  : const SizedBox(width: double.infinity),
+            ),
+            if (parts.more != null)
+              Align(
+                alignment: Alignment.centerLeft,
+                child: AppButton(
+                  label: _expanded ? 'Show less' : 'View more',
+                  icon: _expanded
+                      ? Icons.expand_less_rounded
+                      : Icons.expand_more_rounded,
+                  kind: AppButtonKind.text,
+                  dense: true,
+                  onPressed: () => setState(() => _expanded = !_expanded),
+                ),
+              ),
           ] else
             Text(
-              'Get a short, motivating summary of your calories, protein, '
-              'weight trend and workouts.',
-              style: text.bodySmall?.copyWith(color: muted),
+              'A short, personal summary of your day with one tip.',
+              style: text.bodySmall?.copyWith(color: t.textSecondary),
             ),
           if (ai.error != null)
             Padding(
               padding: const EdgeInsets.only(top: 8),
               child: Text(
                 ai.error!,
-                style: text.bodySmall?.copyWith(color: const Color(0xFFFF6B6B)),
+                style: text.bodySmall?.copyWith(color: t.danger),
               ),
             ),
-          const SizedBox(height: 12),
-          if (!ai.ready)
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: () => context.read<NavController>().go(2),
-                icon: const Icon(Icons.key_rounded),
-                label: const Text('Add your free API key'),
-              ),
-            )
-          else
-            SizedBox(
-              width: double.infinity,
-              child: FilledButton.tonalIcon(
-                onPressed: (online && !ai.loading)
-                    ? () => ai.generate(_buildSnapshot(context))
-                    : null,
-                icon: ai.loading
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2),
-                      )
-                    : const Icon(Icons.refresh_rounded),
-                label: Text(buttonLabel),
-              ),
+          if (!ai.ready) ...[
+            const SizedBox(height: 10),
+            AppButton(
+              label: 'Add your free API key',
+              icon: Icons.key_rounded,
+              kind: AppButtonKind.secondary,
+              expanded: true,
+              dense: true,
+              onPressed: () => context.read<NavController>().go(2),
             ),
+          ] else if (latest == null) ...[
+            const SizedBox(height: 10),
+            AppButton(
+              label: online ? 'Generate summary' : 'Offline',
+              icon: Icons.auto_awesome_rounded,
+              kind: AppButtonKind.tonal,
+              expanded: true,
+              dense: true,
+              onPressed: (online && !ai.loading)
+                  ? () => ai.generate(_buildSnapshot(context))
+                  : null,
+            ),
+          ],
         ],
       ),
     );

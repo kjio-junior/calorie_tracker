@@ -174,7 +174,7 @@ class _PortionSheetState extends State<PortionSheet> {
                   Text(
                     portion == null
                         ? '-'
-                        : '${portion.protein.toStringAsFixed(1)} g protein',
+                        : 'P ${portion.protein.toStringAsFixed(0)} | C ${portion.carbs.toStringAsFixed(0)} | F ${portion.fat.toStringAsFixed(0)} g',
                     style: text.bodyMedium,
                   ),
                 ],

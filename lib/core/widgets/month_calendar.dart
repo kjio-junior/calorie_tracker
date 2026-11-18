@@ -43,10 +43,7 @@ class MonthCalendar extends StatelessWidget {
     final days = DateTime(month.year, month.month + 1, 0).day;
     final rows = ((lead + days) / 7).ceil();
     final canGoNext = !DateTime(month.year, month.month + 1, 1).isAfter(today);
-    final onAccent =
-        ThemeData.estimateBrightnessForColor(t.accent) == Brightness.dark
-            ? Colors.white
-            : Colors.black87;
+    final onAccent = t.onAccent;
 
     Widget cell(int index) {
       final dayNumber = index - lead + 1;
@@ -98,7 +95,7 @@ class MonthCalendar extends StatelessWidget {
                     color: (hasData || isCheat)
                         ? (isSelected
                             ? onAccent
-                            : (isCheat ? const Color(0xFFFFB020) : t.accent))
+                            : (isCheat ? t.warning : t.accent))
                         : Colors.transparent,
                   ),
                 ),

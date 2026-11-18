@@ -2,15 +2,69 @@ import '../core/utils/formatters.dart';
 
 const String kCoachSystemPrompt =
     'You are a supportive nutrition and fitness coach inside a personal '
-    'calorie-tracking app. Write a short daily summary in plain text (no '
-    'markdown, no bullet points, no emojis), at most 110 words. Cover '
-    'calories versus the target, protein progress if the user tracks it, '
-    'the weight trend, and activity. Then give one specific, practical tip. '
-    'If the day is not finished, talk about what is left instead of judging '
-    'the day. Be warm and encouraging, never shaming. Use only the numbers '
-    'provided and do not invent data. You are not a doctor: give no medical '
-    'advice, and if intake looks unsafely low, gently suggest eating more or '
-    'talking to a professional.';
+    'calorie-tracking app. Reply with exactly three lines of plain text (no '
+    'markdown, no bullets, no emojis). Line 1: one short insight about today '
+    '(max 20 words). Line 2: start with "Tip:" and give one specific, '
+    'practical recommendation (max 20 words). Line 3: start with "More:" and '
+    'add two or three sentences of extra detail covering calories, protein, '
+    'the weight trend and activity (max 60 words). If the day is not '
+    'finished, talk about what is left instead of judging the day. Be warm '
+    'and encouraging, never shaming. Use only the numbers provided and do '
+    'not invent data. You are not a doctor: give no medical advice, and if '
+    'intake looks unsafely low, gently suggest eating more or talking to a '
+    'professional.';
+
+/// The coach answer split into a short insight, a tip and optional details.
+/// Older, longer summaries are handled too: the first sentence becomes the
+/// insight and the rest goes into the details.
+class CoachParts {
+  const CoachParts({required this.insight, this.tip, this.more});
+
+  final String insight;
+  final String? tip;
+  final String? more;
+
+  static CoachParts parse(String raw) {
+    final lines = raw
+        .split('\n')
+        .map((l) => l.trim())
+        .where((l) => l.isNotEmpty)
+        .toList();
+    String? tip;
+    String? more;
+    final others = <String>[];
+    for (final l in lines) {
+      final lower = l.toLowerCase();
+      if (lower.startsWith('tip:')) {
+        tip = l.substring(4).trim();
+      } else if (lower.startsWith('more:')) {
+        more = l.substring(5).trim();
+      } else {
+        others.add(l);
+      }
+    }
+    if (others.isEmpty) {
+      return CoachParts(insight: raw.trim(), tip: tip, more: more);
+    }
+    var insight = others.first;
+    final extra = <String>[...others.skip(1)];
+    // Old long paragraph: keep only the first sentence as the headline.
+    if (tip == null && more == null && insight.length > 140) {
+      final m = RegExp(r'^(.{20,}?[.!?])\s+(.*)$', dotAll: true)
+          .firstMatch(insight);
+      if (m != null) {
+        insight = m.group(1)!;
+        extra.insert(0, m.group(2)!);
+      }
+    }
+    if (more != null) extra.add(more);
+    return CoachParts(
+      insight: insight,
+      tip: tip,
+      more: extra.isEmpty ? null : extra.join('\n'),
+    );
+  }
+}
 
 /// Everything the coach is told. The user's name, age and sex are not sent.
 class CoachSnapshot {

@@ -59,7 +59,7 @@ class NotificationService {
     final now = DateTime.now();
     final offsetMs = now.timeZoneOffset.inMilliseconds;
     for (final loc in tz.timeZoneDatabase.locations.values) {
-      if (loc.timeZone(now.millisecondsSinceEpoch).offset == offsetMs) {
+      if (loc.timeZone(now.millisecondsSinceEpoch).offset.inMilliseconds == offsetMs) {
         tz.setLocalLocation(loc);
         return;
       }

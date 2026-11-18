@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/theme/theme_context.dart';
 import '../../core/theme/theme_controller.dart';
 import '../../core/utils/formatters.dart';
 import '../../core/widgets/glass_card.dart';
@@ -64,9 +65,11 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
                   margin: const EdgeInsets.fromLTRB(16, 10, 16, 0),
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: const Color(0x33FFB020),
+                    color: context.appTheme.warning.withValues(alpha: 0.14),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: const Color(0x80FFB020)),
+                    border: Border.all(
+                      color: context.appTheme.warning.withValues(alpha: 0.5),
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -292,7 +295,7 @@ class _SearchTabState extends State<_SearchTab>
               padding: const EdgeInsets.only(top: 8),
               child: Text(
                 _error!,
-                style: text.bodyMedium?.copyWith(color: const Color(0xFFFF6B6B)),
+                style: text.bodyMedium?.copyWith(color: t.danger),
               ),
             ),
           Expanded(
@@ -411,7 +414,7 @@ class _SavedTabState extends State<_SavedTab> {
                           padding: const EdgeInsets.only(right: 20),
                           margin: const EdgeInsets.only(bottom: 8),
                           decoration: BoxDecoration(
-                            color: Colors.red.withValues(alpha: 0.5),
+                            color: t.danger.withValues(alpha: 0.5),
                             borderRadius: BorderRadius.circular(16),
                           ),
                           child: const Icon(Icons.delete_rounded),
@@ -463,12 +466,17 @@ class _ManualTabState extends State<_ManualTab> {
   final _grams = TextEditingController();
   final _kcal = TextEditingController();
   final _protein = TextEditingController();
+  final _carbs = TextEditingController();
+  final _fat = TextEditingController();
   final _servings = TextEditingController(text: '1');
   bool _save = true;
 
+  List<TextEditingController> get _all =>
+      [_name, _desc, _grams, _kcal, _protein, _carbs, _fat, _servings];
+
   @override
   void dispose() {
-    for (final c in [_name, _desc, _grams, _kcal, _protein, _servings]) {
+    for (final c in _all) {
       c.dispose();
     }
     super.dispose();
@@ -499,6 +507,8 @@ class _ManualTabState extends State<_ManualTab> {
       servingDesc: desc.isEmpty ? null : desc,
       kcalPerServing: _num(_kcal)!,
       proteinPerServing: _num(_protein) ?? 0,
+      carbsPerServing: _num(_carbs) ?? 0,
+      fatPerServing: _num(_fat) ?? 0,
     );
     final portion = food.byServings(_num(_servings)!);
     final messenger = ScaffoldMessenger.of(context);
@@ -514,7 +524,7 @@ class _ManualTabState extends State<_ManualTab> {
       SnackBar(content: Text('Added ${food.name} to ${widget.meal.label}')),
     );
     _formKey.currentState!.reset();
-    for (final c in [_name, _desc, _grams, _kcal, _protein]) {
+    for (final c in _all) {
       c.clear();
     }
     _servings.text = '1';
@@ -523,7 +533,16 @@ class _ManualTabState extends State<_ManualTab> {
 
   @override
   Widget build(BuildContext context) {
-    final numeric = const TextInputType.numberWithOptions(decimal: true);
+    const numeric = TextInputType.numberWithOptions(decimal: true);
+
+    Widget pair(Widget a, Widget b) => Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: a),
+            const SizedBox(width: 12),
+            Expanded(child: b),
+          ],
+        );
 
     return Form(
       key: _formKey,
@@ -541,52 +560,54 @@ class _ManualTabState extends State<_ManualTab> {
                       (v ?? '').trim().isEmpty ? 'Enter a name' : null,
                 ),
                 const SizedBox(height: 14),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _desc,
-                        decoration: _dec('Serving', hint: 'e.g. 1 bowl'),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _grams,
-                        keyboardType: numeric,
-                        decoration: _dec('Weight', suffix: 'g'),
-                        validator: (v) => _optional(v, min: 1, max: 5000),
-                      ),
-                    ),
-                  ],
+                pair(
+                  TextFormField(
+                    controller: _desc,
+                    decoration: _dec('Serving', hint: 'e.g. 1 bowl'),
+                  ),
+                  TextFormField(
+                    controller: _grams,
+                    keyboardType: numeric,
+                    decoration: _dec('Weight', suffix: 'g'),
+                    validator: (v) => _optional(v, min: 1, max: 5000),
+                  ),
                 ),
                 const SizedBox(height: 14),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextFormField(
-                        controller: _kcal,
-                        keyboardType: numeric,
-                        decoration: _dec('Calories', suffix: 'kcal'),
-                        validator: (v) => _required(v, min: 0, max: 5000),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextFormField(
-                        controller: _protein,
-                        keyboardType: numeric,
-                        decoration: _dec('Protein', suffix: 'g'),
-                        validator: (v) => _optional(v, min: 0, max: 500),
-                      ),
-                    ),
-                  ],
+                pair(
+                  TextFormField(
+                    controller: _kcal,
+                    keyboardType: numeric,
+                    decoration: _dec('Calories', suffix: 'kcal'),
+                    validator: (v) => _required(v, min: 0, max: 5000),
+                  ),
+                  TextFormField(
+                    controller: _protein,
+                    keyboardType: numeric,
+                    decoration: _dec('Protein', suffix: 'g'),
+                    validator: (v) => _optional(v, min: 0, max: 500),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                pair(
+                  TextFormField(
+                    controller: _carbs,
+                    keyboardType: numeric,
+                    decoration: _dec('Carbs', suffix: 'g'),
+                    validator: (v) => _optional(v, min: 0, max: 1000),
+                  ),
+                  TextFormField(
+                    controller: _fat,
+                    keyboardType: numeric,
+                    decoration: _dec('Fat', suffix: 'g'),
+                    validator: (v) => _optional(v, min: 0, max: 500),
+                  ),
                 ),
                 const SizedBox(height: 6),
                 const Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    'Calories and protein are for one serving.',
+                    'Nutrition values are for one serving. Protein, carbs and '
+                    'fat are optional.',
                     style: TextStyle(fontSize: 12),
                   ),
                 ),
@@ -610,9 +631,6 @@ class _ManualTabState extends State<_ManualTab> {
           const SizedBox(height: 16),
           FilledButton(
             onPressed: _submit,
-            style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(52),
-            ),
             child: Text('Add to ${widget.meal.label}'),
           ),
         ],
@@ -628,22 +646,39 @@ class _OrderItemDraft {
       : name = TextEditingController(),
         kcal = TextEditingController(),
         protein = TextEditingController(),
+        carbs = TextEditingController(),
+        fat = TextEditingController(),
         qty = TextEditingController(text: '1');
 
   final TextEditingController name;
   final TextEditingController kcal;
   final TextEditingController protein;
+  final TextEditingController carbs;
+  final TextEditingController fat;
   final TextEditingController qty;
 
   bool get isEmpty =>
       name.text.trim().isEmpty &&
       kcal.text.trim().isEmpty &&
-      protein.text.trim().isEmpty;
+      protein.text.trim().isEmpty &&
+      carbs.text.trim().isEmpty &&
+      fat.text.trim().isEmpty;
+
+  void clear() {
+    name.clear();
+    kcal.clear();
+    protein.clear();
+    carbs.clear();
+    fat.clear();
+    qty.text = '1';
+  }
 
   void dispose() {
     name.dispose();
     kcal.dispose();
     protein.dispose();
+    carbs.dispose();
+    fat.dispose();
     qty.dispose();
   }
 }
@@ -684,14 +719,10 @@ class _OrderTabState extends State<_OrderTab> {
   double? _n(TextEditingController c) =>
       double.tryParse(c.text.trim().replaceAll(',', '.'));
 
-  double get _totalKcal => _items.fold(
+  double _sum(TextEditingController Function(_OrderItemDraft) pick) =>
+      _items.fold(
         0.0,
-        (s, i) => s + (_n(i.kcal) ?? 0) * (_n(i.qty) ?? 1),
-      );
-
-  double get _totalProtein => _items.fold(
-        0.0,
-        (s, i) => s + (_n(i.protein) ?? 0) * (_n(i.qty) ?? 1),
+        (s, i) => s + (_n(pick(i)) ?? 0) * (_n(i.qty) ?? 1),
       );
 
   void _snack(String msg) {
@@ -704,10 +735,7 @@ class _OrderTabState extends State<_OrderTab> {
   void _removeItem(_OrderItemDraft i) {
     setState(() {
       if (_items.length == 1) {
-        i.name.clear();
-        i.kcal.clear();
-        i.protein.clear();
-        i.qty.text = '1';
+        i.clear();
       } else {
         _items.remove(i);
         _trash.add(i);
@@ -746,6 +774,8 @@ class _OrderTabState extends State<_OrderTab> {
           servingDesc: 'as listed',
           kcalPerServing: _n(i.kcal)!,
           proteinPerServing: _n(i.protein) ?? 0,
+          carbsPerServing: _n(i.carbs) ?? 0,
+          fatPerServing: _n(i.fat) ?? 0,
         );
         final portion = food.byServings(qty);
         total += portion.calories;
@@ -775,8 +805,21 @@ class _OrderTabState extends State<_OrderTab> {
   Widget build(BuildContext context) {
     final t = context.watch<ThemeController>().theme;
     final text = Theme.of(context).textTheme;
-    final muted = t.textColor.withValues(alpha: 0.7);
     const numeric = TextInputType.numberWithOptions(decimal: true);
+
+    Widget field(
+      TextEditingController c,
+      String label, {
+      String? suffix,
+      String? Function(String?)? validator,
+    }) =>
+        TextFormField(
+          controller: c,
+          keyboardType: numeric,
+          decoration: _dec(label, suffix: suffix),
+          onChanged: (_) => setState(() {}),
+          validator: validator,
+        );
 
     return Form(
       key: _formKey,
@@ -790,26 +833,22 @@ class _OrderTabState extends State<_OrderTab> {
                 TextFormField(
                   controller: _restaurant,
                   textCapitalization: TextCapitalization.words,
-                  decoration: _dec('Restaurant (optional)', hint: 'e.g. Jollibee'),
+                  decoration:
+                      _dec('Restaurant (optional)', hint: 'e.g. Jollibee'),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 8),
                 Text(
-                  'Enter each item and the calories printed on the menu or '
-                  'receipt.',
-                  style: text.bodySmall?.copyWith(color: muted),
+                  'Enter each item and the nutrition printed on the menu or '
+                  'receipt. Only calories are required.',
+                  style: text.bodySmall?.copyWith(color: t.textSecondary),
                 ),
               ],
             ),
           ),
           for (var n = 0; n < _items.length; n++) ...[
             const SizedBox(height: 12),
-            Container(
+            GlassCard(
               padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(18),
-                color: t.glassFill,
-                border: Border.all(color: t.glassBorder),
-              ),
               child: Column(
                 children: [
                   Row(
@@ -818,7 +857,8 @@ class _OrderTabState extends State<_OrderTab> {
                         child: TextFormField(
                           controller: _items[n].name,
                           textCapitalization: TextCapitalization.sentences,
-                          decoration: _dec('Item ${n + 1}', hint: 'e.g. Chickenjoy 1pc'),
+                          decoration: _dec('Item ${n + 1}',
+                              hint: 'e.g. Chickenjoy 1pc'),
                           onChanged: (_) => setState(() {}),
                           validator: (v) => (_items[n].isEmpty ||
                                   (v ?? '').trim().isNotEmpty)
@@ -835,14 +875,14 @@ class _OrderTabState extends State<_OrderTab> {
                   ),
                   const SizedBox(height: 10),
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Expanded(
                         flex: 3,
-                        child: TextFormField(
-                          controller: _items[n].kcal,
-                          keyboardType: numeric,
-                          decoration: _dec('Calories', suffix: 'kcal'),
-                          onChanged: (_) => setState(() {}),
+                        child: field(
+                          _items[n].kcal,
+                          'Calories',
+                          suffix: 'kcal',
                           validator: (v) {
                             if (_items[n].isEmpty) return null;
                             if ((v ?? '').trim().isEmpty) return 'Required';
@@ -853,22 +893,9 @@ class _OrderTabState extends State<_OrderTab> {
                       const SizedBox(width: 8),
                       Expanded(
                         flex: 2,
-                        child: TextFormField(
-                          controller: _items[n].protein,
-                          keyboardType: numeric,
-                          decoration: _dec('Protein', suffix: 'g'),
-                          onChanged: (_) => setState(() {}),
-                          validator: (v) => _numberOrEmpty(v, max: 500),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        flex: 2,
-                        child: TextFormField(
-                          controller: _items[n].qty,
-                          keyboardType: numeric,
-                          decoration: _dec('Qty'),
-                          onChanged: (_) => setState(() {}),
+                        child: field(
+                          _items[n].qty,
+                          'Qty',
                           validator: (v) {
                             final q = double.tryParse(
                               (v ?? '').trim().replaceAll(',', '.'),
@@ -876,6 +903,38 @@ class _OrderTabState extends State<_OrderTab> {
                             if (q == null || q <= 0 || q > 50) return '0.1-50';
                             return null;
                           },
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: field(
+                          _items[n].protein,
+                          'Protein',
+                          suffix: 'g',
+                          validator: (v) => _numberOrEmpty(v, max: 500),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: field(
+                          _items[n].carbs,
+                          'Carbs',
+                          suffix: 'g',
+                          validator: (v) => _numberOrEmpty(v, max: 1000),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: field(
+                          _items[n].fat,
+                          'Fat',
+                          suffix: 'g',
+                          validator: (v) => _numberOrEmpty(v, max: 500),
                         ),
                       ),
                     ],
@@ -889,9 +948,6 @@ class _OrderTabState extends State<_OrderTab> {
             onPressed: () => setState(() => _items.add(_OrderItemDraft())),
             icon: const Icon(Icons.add_rounded),
             label: const Text('Add another item'),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(46),
-            ),
           ),
           const SizedBox(height: 12),
           GlassCard(
@@ -906,12 +962,21 @@ class _OrderTabState extends State<_OrderTab> {
                           ?.copyWith(fontWeight: FontWeight.w700),
                     ),
                     Text(
-                      '${_totalKcal.round()} kcal  |  '
-                      '${_totalProtein.toStringAsFixed(0)} g protein',
+                      '${_sum((i) => i.kcal).round()} kcal',
                       style: text.titleSmall
                           ?.copyWith(fontWeight: FontWeight.w800),
                     ),
                   ],
+                ),
+                const SizedBox(height: 4),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    'P ${_sum((i) => i.protein).round()} g  |  '
+                    'C ${_sum((i) => i.carbs).round()} g  |  '
+                    'F ${_sum((i) => i.fat).round()} g',
+                    style: text.bodySmall?.copyWith(color: t.textSecondary),
+                  ),
                 ),
                 SwitchListTile(
                   contentPadding: EdgeInsets.zero,
@@ -928,9 +993,6 @@ class _OrderTabState extends State<_OrderTab> {
             onPressed: _busy ? null : _submit,
             icon: const Icon(Icons.receipt_long_rounded),
             label: Text('Log order to ${widget.meal.label}'),
-            style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(52),
-            ),
           ),
         ],
       ),

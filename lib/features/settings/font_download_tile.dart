@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/theme/theme_context.dart';
 import '../../core/theme/theme_controller.dart';
 import '../../state/connectivity_controller.dart';
 
@@ -83,7 +84,7 @@ class _FontDownloadTileState extends State<FontDownloadTile> {
             child: Text(
               _message!,
               style: text.bodySmall?.copyWith(
-                color: _failed ? const Color(0xFFFF6B6B) : null,
+                color: _failed ? context.appTheme.danger : null,
               ),
             ),
           ),
