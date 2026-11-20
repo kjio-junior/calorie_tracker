@@ -343,7 +343,7 @@ class ThemeController extends ChangeNotifier {
 
       // ---- bottom navigation ----
       navigationBarTheme: NavigationBarThemeData(
-        height: 68,
+        height: 64,
         backgroundColor: Colors.transparent,
         surfaceTintColor: Colors.transparent,
         elevation: 0,

@@ -131,8 +131,9 @@ class FoodRepository {
       final rows = await db.query(
         'saved_foods',
         columns: ['id'],
-        where: "source = 'custom' AND lower(name) = lower(?)",
-        whereArgs: [f.name],
+        where: "source = 'custom' AND lower(name) = lower(?) "
+            "AND coalesce(brand, '') = ?",
+        whereArgs: [f.name, f.brand ?? ''],
         limit: 1,
       );
       if (rows.isNotEmpty) existingId = rows.first['id'] as int;

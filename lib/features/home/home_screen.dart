@@ -8,7 +8,6 @@ import '../../core/ui/app_button.dart';
 import '../../core/ui/macro_bar.dart';
 import '../../core/ui/section_header.dart';
 import '../../core/utils/formatters.dart';
-import '../../core/utils/meal_guess.dart';
 import '../../core/widgets/glass_card.dart';
 import '../../core/widgets/offline_badge.dart';
 import '../../core/widgets/progress_ring.dart';
@@ -70,7 +69,6 @@ class HomeScreen extends StatelessWidget {
     );
 
     return Scaffold(
-      bottomNavigationBar: const _LogFoodBar(),
       body: SafeArea(
         bottom: false,
         child: ListView(
@@ -376,34 +374,6 @@ class HomeScreen extends StatelessWidget {
 }
 
 // ------------------------------------------------------------- small parts
-
-/// Persistent bottom action: sits between the content and the navigation
-/// bar, so it never covers anything.
-class _LogFoodBar extends StatelessWidget {
-  const _LogFoodBar();
-
-  @override
-  Widget build(BuildContext context) {
-    final t = context.appTheme;
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
-      decoration: BoxDecoration(
-        color: t.surface,
-        border: Border(top: BorderSide(color: t.divider)),
-      ),
-      child: AppButton(
-        label: 'Log food',
-        icon: Icons.add_rounded,
-        expanded: true,
-        onPressed: () => Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (_) => AddFoodScreen(initialMeal: guessMeal()),
-          ),
-        ),
-      ),
-    );
-  }
-}
 
 class _StreakInline extends StatelessWidget {
   const _StreakInline({required this.days});

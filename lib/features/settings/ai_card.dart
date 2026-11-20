@@ -200,7 +200,8 @@ class _AiCardState extends State<AiCard> {
           Text(
             'When you tap Generate on the dashboard, today\'s totals, weight '
             'trend and activity are sent to ${p.label}. Your name, age and '
-            'sex are never sent.',
+            'sex are never sent. AI food logging sends only the food '
+            'description and weight you type.',
             style: text.labelSmall?.copyWith(color: muted),
           ),
         ],

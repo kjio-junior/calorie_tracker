@@ -35,12 +35,13 @@ class AiService {
     required String apiKey,
     required String system,
     required String prompt,
+    double temperature = 0.7,
   }) {
     switch (provider) {
       case AiProvider.gemini:
-        return _gemini(model, apiKey, system, prompt);
+        return _gemini(model, apiKey, system, prompt, temperature);
       case AiProvider.groq:
-        return _groq(model, apiKey, system, prompt);
+        return _groq(model, apiKey, system, prompt, temperature);
     }
   }
 
@@ -49,6 +50,7 @@ class AiService {
     String apiKey,
     String system,
     String prompt,
+    double temperature,
   ) async {
     final name = model.trim().replaceFirst(RegExp(r'^models/'), '');
     final uri = Uri.https(
@@ -73,7 +75,10 @@ class AiService {
           },
         ],
         // Generous limit: some Gemini models spend part of it on "thinking".
-        'generationConfig': {'temperature': 0.7, 'maxOutputTokens': 1200},
+        'generationConfig': {
+          'temperature': temperature,
+          'maxOutputTokens': 1200,
+        },
       }),
       name,
     );
@@ -112,6 +117,7 @@ class AiService {
     String apiKey,
     String system,
     String prompt,
+    double temperature,
   ) async {
     final name = model.trim();
     final json = await _post(
@@ -126,7 +132,7 @@ class AiService {
           {'role': 'system', 'content': system},
           {'role': 'user', 'content': prompt},
         ],
-        'temperature': 0.7,
+        'temperature': temperature,
         'max_tokens': 600,
       }),
       name,

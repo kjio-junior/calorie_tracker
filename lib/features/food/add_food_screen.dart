@@ -10,6 +10,7 @@ import '../../data/open_food_facts_service.dart';
 import '../../domain/food.dart';
 import '../../state/connectivity_controller.dart';
 import '../../state/food_controller.dart';
+import 'ai_food_tab.dart';
 import 'portion_sheet.dart';
 
 InputDecoration _dec(String label, {String? suffix, String? hint}) =>
@@ -42,7 +43,7 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 4,
+      length: 5,
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Add food'),
@@ -50,6 +51,7 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
             tabs: [
               Tab(text: 'Search'),
               Tab(text: 'Saved'),
+              Tab(text: 'AI'),
               Tab(text: 'Order'),
               Tab(text: 'Manual'),
             ],
@@ -101,6 +103,7 @@ class _AddFoodScreenState extends State<AddFoodScreen> {
                   children: [
                     _SearchTab(meal: _meal, date: widget.date),
                     _SavedTab(meal: _meal, date: widget.date),
+                    AiFoodTab(meal: _meal, date: widget.date),
                     _OrderTab(meal: _meal, date: widget.date),
                     _ManualTab(meal: _meal, date: widget.date),
                   ],

@@ -6,6 +6,7 @@ import '../core/utils/formatters.dart';
 import '../data/ai_service.dart';
 import '../data/ai_summary_repository.dart';
 import '../data/food_repository.dart';
+import '../domain/ai_food.dart';
 import '../domain/coach_prompt.dart';
 
 /// Free AI daily coach. API keys live in secure storage (never in the
@@ -125,6 +126,28 @@ class AiCoachController extends ChangeNotifier {
     } catch (e) {
       return 'Something went wrong: $e';
     }
+  }
+
+  /// Estimates calories, protein, carbs and fat for a food the user
+  /// described (and optionally weighed), using the saved API key. Only the
+  /// description and weight are sent to the provider.
+  Future<AiFoodEstimate> estimateFood({
+    required String description,
+    double? weightG,
+  }) async {
+    final key = await _storage.read(key: _kKey(_provider));
+    if (key == null || key.isEmpty) {
+      throw const AiException('Add your API key in Settings first.');
+    }
+    final raw = await _service.generate(
+      provider: _provider,
+      model: modelFor(_provider),
+      apiKey: key,
+      system: kFoodEstimateSystemPrompt,
+      prompt: foodEstimatePrompt(description, weightG),
+      temperature: 0.2,
+    );
+    return AiFoodEstimate.parse(raw, fallbackName: description);
   }
 
   Future<void> generate(CoachSnapshot base) async {
